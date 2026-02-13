@@ -1,0 +1,2 @@
+plan_id,fac_id,oper_id,oper_nm,eps_lot_gbn_cd,work_cond_desc,eqp_id,recipe_id,user_def_val_1,user_def_val_2,user_def_val_3,user_def_val_4,user_def_val_5,user_def_val_6,user_def_val_7,user_def_val_8,user_def_val_9,user_def_val_10,user_def_val_11,user_def_val_12,user_def_val_13,user_def_val_14,user_def_val_15,note
+PLAN001,FAC,OPER,NAME,EPS,DESC,EQP,RECIPE,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,Note

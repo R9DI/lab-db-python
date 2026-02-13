@@ -1,0 +1,2 @@
+project_name,dev_type,dev_category,verification_lv,preceding_type,target_device,first_target_tech,second_target_tech,htrs_link,htrs_color,nudd,module,project_code,start_date,pm,project_grade,project_purpose,project_goal,current_status,plan_id,lot_code,wf_direction,eval_process,prev_eval,cross_experiment,eval_category,eval_item,lot_request,reference,volume_split,assign_wf
+예시_과제명,Advanced,소자,LV.1,,,,,,,N,,,CODE123,2025.01.01,홍길동,A,목적,목표,진행중,PLAN001,LOT001,Flow,Proc,Prev,Cross,Cat,Item,Req,Ref,Vol,Assign
