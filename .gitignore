@@ -12,3 +12,5 @@ yarn-error.log*
 coverage/
 *.swp
 *.swo
+*.db-wal
+*.db-shm

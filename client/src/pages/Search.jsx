@@ -1,21 +1,21 @@
-import { useState, useRef, useEffect } from 'react';
-import axios from 'axios';
-import SearchResult from '../components/SearchResult';
+import { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import SearchResult from "../components/SearchResult";
 
 function Search() {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [searchContext, setSearchContext] = useState([]); // 누적 검색어 히스토리
   const [messages, setMessages] = useState([
     {
-      type: 'assistant',
-      text: '안녕하세요! 실험 검색 도우미입니다.\n원하는 실험을 자연어로 검색해보세요. 키워드, 모듈명, 공정명, 과제 목표 등 무엇이든 입력할 수 있습니다.',
+      type: "assistant",
+      text: "안녕하세요! 실험 검색 도우미입니다.\n원하는 실험을 자연어로 검색해보세요. 키워드, 모듈명, 공정명, 과제 목표 등 무엇이든 입력할 수 있습니다.",
       suggestions: [
-        { keyword: 'Cryo ESL', context: '시작 추천' },
-        { keyword: 'Hybrid Bonding', context: '시작 추천' },
-        { keyword: 'Low Thermal', context: '시작 추천' },
-        { keyword: 'HKMG Scaling', context: '시작 추천' },
-        { keyword: 'Dishing', context: '시작 추천' },
-        { keyword: 'Junction', context: '시작 추천' },
+        { keyword: "Cryo ESL", context: "시작 추천" },
+        { keyword: "Hybrid Bonding", context: "시작 추천" },
+        { keyword: "Low Thermal", context: "시작 추천" },
+        { keyword: "HKMG Scaling", context: "시작 추천" },
+        { keyword: "Dishing", context: "시작 추천" },
+        { keyword: "Junction", context: "시작 추천" },
       ],
     },
   ]);
@@ -24,7 +24,7 @@ function Search() {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // loading이 끝나면 입력창에 포커스
@@ -38,29 +38,31 @@ function Search() {
     if (!query.trim()) return;
 
     // 누적 검색어 구성
-    const newContext = isAccumulate ? [...searchContext, query.trim()] : [query.trim()];
-    const fullQuery = newContext.join(' ');
+    const newContext = isAccumulate
+      ? [...searchContext, query.trim()]
+      : [query.trim()];
+    const fullQuery = newContext.join(" ");
     setSearchContext(newContext);
 
     // 사용자 메시지 (추가 키워드인 경우 표시)
     const displayText = isAccumulate
       ? `+ ${query}  (전체: ${fullQuery})`
       : query;
-    setMessages(prev => [...prev, { type: 'user', text: displayText }]);
-    setInput('');
+    setMessages((prev) => [...prev, { type: "user", text: displayText }]);
+    setInput("");
     setLoading(true);
 
     try {
-      const res = await axios.post('/api/search', {
+      const res = await axios.post("/api/search", {
         query: fullQuery,
-        topK: 10
+        topK: 10,
       });
       const data = res.data;
 
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
         {
-          type: 'assistant',
+          type: "assistant",
           text: data.summary,
           results: data.results,
           suggestions: data.suggestions,
@@ -68,9 +70,12 @@ function Search() {
         },
       ]);
     } catch {
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
-        { type: 'assistant', text: '검색 중 오류가 발생했습니다. 다시 시도해주세요.' },
+        {
+          type: "assistant",
+          text: "검색 중 오류가 발생했습니다. 다시 시도해주세요.",
+        },
       ]);
     }
     setLoading(false);
@@ -91,8 +96,59 @@ function Search() {
 
   const handleReset = () => {
     setMessages([messages[0]]);
-    setInput('');
+    setInput("");
     setSearchContext([]);
+    inputRef.current?.focus();
+  };
+
+  const goBack = async () => {
+    if (searchContext.length === 0) return;
+    const newContext = searchContext.slice(0, -1);
+    const removedKeyword = searchContext[searchContext.length - 1];
+    setSearchContext(newContext);
+
+    if (newContext.length === 0) {
+      // 키워드가 다 없어지면 초기화
+      handleReset();
+      return;
+    }
+
+    const fullQuery = newContext.join(" ");
+    setMessages((prev) => [
+      ...prev,
+      {
+        type: "user",
+        text: `↩ "${removedKeyword}" 제거  (현재: ${fullQuery})`,
+      },
+    ]);
+    setLoading(true);
+
+    try {
+      const res = await axios.post("/api/search", {
+        query: fullQuery,
+        topK: 10,
+      });
+      const data = res.data;
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "assistant",
+          text: data.summary,
+          results: data.results,
+          suggestions: data.suggestions,
+          query: fullQuery,
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          type: "assistant",
+          text: "검색 중 오류가 발생했습니다. 다시 시도해주세요.",
+        },
+      ]);
+    }
+    setLoading(false);
     inputRef.current?.focus();
   };
 
@@ -129,7 +185,10 @@ function Search() {
           <div className="flex items-center gap-2 max-w-4xl mx-auto mb-2 text-xs">
             <span className="text-gray-400">검색 조건:</span>
             {searchContext.map((kw, i) => (
-              <span key={i} className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">
+              <span
+                key={i}
+                className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full"
+              >
                 {kw}
               </span>
             ))}
@@ -150,6 +209,15 @@ function Search() {
             title="대화 초기화"
           >
             초기화
+          </button>
+          <button
+            type="button"
+            onClick={goBack}
+            disabled={searchContext.length === 0 || loading}
+            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 border rounded-lg hover:bg-gray-50 transition shrink-0 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1"
+            title="이전 검색 단계로 돌아가기"
+          >
+            ← 이전
           </button>
           <input
             ref={inputRef}
@@ -176,7 +244,7 @@ function Search() {
 
 function ChatMessage({ message, onSuggestionClick }) {
   const [expandedResults, setExpandedResults] = useState(false);
-  const isUser = message.type === 'user';
+  const isUser = message.type === "user";
 
   if (isUser) {
     return (
@@ -199,22 +267,38 @@ function ChatMessage({ message, onSuggestionClick }) {
           {message.text}
         </div>
 
-        {/* 검색 결과 */}
+        {/* 검색 결과 - 1건이면 하이라이트 */}
         {message.results && message.results.length > 0 && (
           <div>
-            <button
-              onClick={() => setExpandedResults(!expandedResults)}
-              className="text-sm text-indigo-600 hover:text-indigo-800 font-medium mb-2"
-            >
-              {expandedResults
-                ? '실험 상세 접기'
-                : `실험 상세 보기 (${message.results.length}건)`}
-            </button>
-            {expandedResults && (
-              <div className="space-y-3">
-                {message.results.map((r, i) => (
-                  <SearchResult key={i} result={r} rank={i + 1} />
-                ))}
+            {message.results.length === 1 ? (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-emerald-50 border border-emerald-300 rounded-lg">
+                  <span className="text-emerald-600 text-lg">✅</span>
+                  <span className="text-sm font-semibold text-emerald-700">
+                    검색 완료! 실험이 1건으로 좁혀졌습니다.
+                  </span>
+                </div>
+                <div className="ring-2 ring-emerald-400 ring-offset-2 rounded-lg">
+                  <SearchResult result={message.results[0]} rank={1} />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <button
+                  onClick={() => setExpandedResults(!expandedResults)}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium mb-2"
+                >
+                  {expandedResults
+                    ? "실험 상세 접기"
+                    : `실험 상세 보기 (${message.results.length}건)`}
+                </button>
+                {expandedResults && (
+                  <div className="space-y-3">
+                    {message.results.map((r, i) => (
+                      <SearchResult key={i} result={r} rank={i + 1} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -225,8 +309,8 @@ function ChatMessage({ message, onSuggestionClick }) {
           <div className="bg-gray-50 rounded-xl p-3 border">
             <p className="text-xs text-gray-500 mb-2 font-medium">
               {message.results
-                ? '이런 실험을 찾고 계신가요? 키워드를 선택해서 더 좁혀보세요:'
-                : '추천 검색어:'}
+                ? "이런 실험을 찾고 계신가요? 키워드를 선택해서 더 좁혀보세요:"
+                : "추천 검색어:"}
             </p>
             <div className="flex flex-wrap gap-2">
               {message.suggestions.map((s, i) => (
@@ -235,8 +319,12 @@ function ChatMessage({ message, onSuggestionClick }) {
                   onClick={() => onSuggestionClick(s.keyword)}
                   className="group px-3 py-1.5 bg-white border rounded-full text-sm hover:bg-indigo-50 hover:border-indigo-300 transition flex items-center gap-1.5"
                 >
-                  <span className="text-gray-700 group-hover:text-indigo-700">{s.keyword}</span>
-                  <span className="text-xs text-gray-400 group-hover:text-indigo-500">{s.context}</span>
+                  <span className="text-gray-700 group-hover:text-indigo-700">
+                    {s.keyword}
+                  </span>
+                  <span className="text-xs text-gray-400 group-hover:text-indigo-500">
+                    {s.context}
+                  </span>
                 </button>
               ))}
             </div>
