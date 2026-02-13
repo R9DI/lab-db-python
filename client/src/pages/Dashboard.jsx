@@ -1,9 +1,24 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { AutoComplete, Input } from "antd"; // Ant Design imports
+import { AutoComplete } from "antd";
 import ProjectCard from "../components/ProjectCard";
 import ExperimentCard from "../components/ExperimentCard";
 import SplitTable from "../components/SplitTable";
+
+const EMPTY_PROJECT_FORM = {
+  project_name: "",
+  module: "",
+  pm: "",
+  project_code: "",
+  dev_type: "",
+  dev_category: "",
+  verification_lv: "",
+  target_device: "",
+  first_target_tech: "",
+  project_grade: "",
+  project_purpose: "",
+  project_goal: "",
+};
 
 function Dashboard() {
   const [projects, setProjects] = useState([]);
@@ -12,18 +27,21 @@ function Dashboard() {
   const [selectedExperiment, setSelectedExperiment] = useState(null);
   const [splits, setSplits] = useState([]);
 
+  // Add project modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newProject, setNewProject] = useState(EMPTY_PROJECT_FORM);
+
   // Project search state
   const [projectOptions, setProjectOptions] = useState([]);
   // Experiment search state
   const [experimentOptions, setExperimentOptions] = useState([]);
   const [experimentSearchText, setExperimentSearchText] = useState("");
 
-  useEffect(() => {
+  const fetchProjects = () => {
     axios
       .get("/api/projects")
       .then((res) => {
         setProjects(res.data);
-        // Initialize options for autocomplete
         setProjectOptions(
           res.data.map((p) => ({
             value: p.project_name,
@@ -33,7 +51,43 @@ function Dashboard() {
         );
       })
       .catch((err) => console.error("Error fetching projects:", err));
+  };
+
+  useEffect(() => {
+    fetchProjects();
   }, []);
+
+  // 과제 추가
+  const addProject = async () => {
+    if (!newProject.project_name.trim()) {
+      alert("과제명은 필수입니다.");
+      return;
+    }
+    try {
+      await axios.post("/api/projects", newProject);
+      setShowAddModal(false);
+      setNewProject(EMPTY_PROJECT_FORM);
+      fetchProjects();
+    } catch (err) {
+      alert(err.response?.data?.error || "과제 추가 실패");
+    }
+  };
+
+  // 과제 삭제
+  const deleteProject = async (project) => {
+    try {
+      await axios.delete(`/api/projects/${project.id}`);
+      if (selectedProject?.id === project.id) {
+        setSelectedProject(null);
+        setExperiments([]);
+        setSelectedExperiment(null);
+        setSplits([]);
+      }
+      fetchProjects();
+    } catch (err) {
+      alert(err.response?.data?.error || "과제 삭제 실패");
+    }
+  };
 
   const selectProject = async (project) => {
     setSelectedProject(project);
@@ -151,6 +205,13 @@ function Dashboard() {
             <span className="text-sm text-gray-400 font-normal">
               ({projects.length}건)
             </span>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="ml-2 w-6 h-6 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 transition text-sm font-bold"
+              title="과제 추가"
+            >
+              +
+            </button>
           </h2>
           <div className="w-64">
             <AutoComplete
@@ -171,6 +232,7 @@ function Dashboard() {
               project={p}
               selected={selectedProject?.id === p.id}
               onClick={() => selectProject(p)}
+              onDelete={deleteProject}
             />
           ))}
         </div>
@@ -225,6 +287,137 @@ function Dashboard() {
           </h2>
           <SplitTable splits={splits} />
         </section>
+      )}
+      {/* 과제 추가 모달 */}
+      {showAddModal && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          onClick={() => setShowAddModal(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-800">새 과제 추가</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-6 py-4 space-y-3">
+              {[
+                {
+                  key: "project_name",
+                  label: "과제명 *",
+                  placeholder: "과제명 입력 (필수)",
+                },
+                { key: "module", label: "모듈", placeholder: "Cell, Peri 등" },
+                { key: "pm", label: "PM", placeholder: "담당자 이름" },
+                {
+                  key: "project_code",
+                  label: "과제 코드",
+                  placeholder: "PRJ-2025-001",
+                },
+                {
+                  key: "dev_type",
+                  label: "개발 유형",
+                  placeholder: "신규개발, 양산적용 등",
+                },
+                {
+                  key: "dev_category",
+                  label: "개발 분류",
+                  placeholder: "DRAM, NAND 등",
+                },
+                {
+                  key: "verification_lv",
+                  label: "검증 레벨",
+                  placeholder: "Lv1, Lv2 등",
+                },
+                {
+                  key: "target_device",
+                  label: "대상 디바이스",
+                  placeholder: "D1a, D1b 등",
+                },
+                {
+                  key: "first_target_tech",
+                  label: "1차 대상 기술",
+                  placeholder: "1a DRAM 등",
+                },
+                {
+                  key: "project_grade",
+                  label: "과제 등급",
+                  placeholder: "S, A, B 등",
+                },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    {label}
+                  </label>
+                  <input
+                    type="text"
+                    value={newProject[key]}
+                    onChange={(e) =>
+                      setNewProject({ ...newProject, [key]: e.target.value })
+                    }
+                    placeholder={placeholder}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400"
+                  />
+                </div>
+              ))}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  과제 목적
+                </label>
+                <textarea
+                  value={newProject.project_purpose}
+                  onChange={(e) =>
+                    setNewProject({
+                      ...newProject,
+                      project_purpose: e.target.value,
+                    })
+                  }
+                  placeholder="과제의 주요 목적을 입력하세요"
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  과제 목표
+                </label>
+                <textarea
+                  value={newProject.project_goal}
+                  onChange={(e) =>
+                    setNewProject({
+                      ...newProject,
+                      project_goal: e.target.value,
+                    })
+                  }
+                  placeholder="달성 목표를 입력하세요"
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 resize-none"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                취소
+              </button>
+              <button
+                onClick={addProject}
+                className="px-4 py-2 text-sm text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition font-medium"
+              >
+                추가
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

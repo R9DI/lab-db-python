@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import SearchResult from "../components/SearchResult";
 
 function Search() {
@@ -22,6 +23,7 @@ function Search() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -161,6 +163,9 @@ function Search() {
             key={i}
             message={msg}
             onSuggestionClick={handleSuggestionClick}
+            onCreateFromExperiment={(result) => {
+              navigate("/new-experiment", { state: { sourceResult: result } });
+            }}
           />
         ))}
 
@@ -242,7 +247,7 @@ function Search() {
   );
 }
 
-function ChatMessage({ message, onSuggestionClick }) {
+function ChatMessage({ message, onSuggestionClick, onCreateFromExperiment }) {
   const [expandedResults, setExpandedResults] = useState(false);
   const isUser = message.type === "user";
 
@@ -281,6 +286,12 @@ function ChatMessage({ message, onSuggestionClick }) {
                 <div className="ring-2 ring-emerald-400 ring-offset-2 rounded-lg">
                   <SearchResult result={message.results[0]} rank={1} />
                 </div>
+                <button
+                  onClick={() => onCreateFromExperiment(message.results[0])}
+                  className="mt-3 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
+                >
+                  🧪 이 실험을 바탕으로 신규 실험 구성하기 →
+                </button>
               </div>
             ) : (
               <div>

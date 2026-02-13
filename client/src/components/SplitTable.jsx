@@ -1,59 +1,100 @@
+import { useMemo } from "react";
+import { AgGridReact } from "ag-grid-react";
+import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
 function SplitTable({ splits }) {
   if (!splits || splits.length === 0) return null;
 
-  const wfCols = [];
-  for (let i = 1; i <= 15; i++) {
-    const key = `user_def_val_${i}`;
-    const hasData = splits.some(s => s[key] && s[key].trim());
-    if (hasData) wfCols.push({ key, label: `WF${i}` });
-  }
+  // 데이터가 있는 WF 컬럼만 표시
+  const wfCols = useMemo(() => {
+    const cols = [];
+    for (let i = 1; i <= 15; i++) {
+      const key = `user_def_val_${i}`;
+      const hasData = splits.some((s) => s[key] && s[key].trim());
+      if (hasData) {
+        cols.push({
+          headerName: `WF${i}`,
+          field: key,
+          width: 55,
+          cellStyle: (params) => {
+            if (params.value === "O")
+              return {
+                color: "#059669",
+                fontWeight: "bold",
+                textAlign: "center",
+              };
+            return { textAlign: "center" };
+          },
+        });
+      }
+    }
+    return cols;
+  }, [splits]);
+
+  const columnDefs = useMemo(
+    () => [
+      { headerName: "FAC", field: "fac_id", width: 65 },
+      { headerName: "OPER_ID", field: "oper_id", width: 110 },
+      { headerName: "OPER_NM", field: "oper_nm", width: 120 },
+      {
+        headerName: "Split",
+        field: "eps_lot_gbn_cd",
+        width: 75,
+        cellStyle: (params) => {
+          if (params.value === "base")
+            return {
+              backgroundColor: "#DBEAFE",
+              color: "#1E40AF",
+              fontWeight: "600",
+            };
+          return {
+            backgroundColor: "#FEF3C7",
+            color: "#92400E",
+            fontWeight: "600",
+          };
+        },
+      },
+      { headerName: "조건", field: "work_cond_desc", minWidth: 180, flex: 1 },
+      { headerName: "장비", field: "eqp_id", width: 90 },
+      { headerName: "Recipe", field: "recipe_id", width: 140 },
+      ...wfCols,
+      { headerName: "Note", field: "note", minWidth: 120, flex: 1 },
+    ],
+    [wfCols],
+  );
+
+  const defaultColDef = useMemo(
+    () => ({
+      resizable: true,
+      sortable: true,
+      suppressMovable: true,
+    }),
+    [],
+  );
+
+  const getRowStyle = (params) => {
+    if (params.data.eps_lot_gbn_cd === "base") {
+      return { backgroundColor: "#EFF6FF" };
+    }
+    return { backgroundColor: "#FFFBEB" };
+  };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-xs border-collapse">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">FAC</th>
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">OPER_ID</th>
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">OPER_NM</th>
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">Split</th>
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">조건</th>
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">장비</th>
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">Recipe</th>
-            {wfCols.map(c => (
-              <th key={c.key} className="border px-2 py-1.5 text-center font-medium text-gray-600">{c.label}</th>
-            ))}
-            <th className="border px-2 py-1.5 text-left font-medium text-gray-600">Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          {splits.map((s, i) => (
-            <tr key={s.id || i} className={`${s.eps_lot_gbn_cd === 'base' ? 'bg-blue-50' : 'bg-amber-50'} hover:bg-gray-50`}>
-              <td className="border px-2 py-1">{s.fac_id}</td>
-              <td className="border px-2 py-1">{s.oper_id}</td>
-              <td className="border px-2 py-1">{s.oper_nm}</td>
-              <td className="border px-2 py-1">
-                <span className={`px-1.5 py-0.5 rounded text-xs ${
-                  s.eps_lot_gbn_cd === 'base' ? 'bg-blue-200 text-blue-800' : 'bg-amber-200 text-amber-800'
-                }`}>
-                  {s.eps_lot_gbn_cd}
-                </span>
-              </td>
-              <td className="border px-2 py-1">{s.work_cond_desc || '-'}</td>
-              <td className="border px-2 py-1">{s.eqp_id}</td>
-              <td className="border px-2 py-1 font-mono">{s.recipe_id}</td>
-              {wfCols.map(c => (
-                <td key={c.key} className="border px-2 py-1 text-center">
-                  {s[c.key] === 'O' ? (
-                    <span className="text-emerald-600 font-bold">O</span>
-                  ) : s[c.key] || ''}
-                </td>
-              ))}
-              <td className="border px-2 py-1 text-gray-500">{s.note}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div
+      style={{ width: "100%", height: Math.min(splits.length * 42 + 50, 400) }}
+    >
+      <AgGridReact
+        rowData={splits}
+        columnDefs={columnDefs}
+        defaultColDef={defaultColDef}
+        getRowStyle={getRowStyle}
+        headerHeight={36}
+        rowHeight={36}
+        domLayout={splits.length <= 8 ? "autoHeight" : undefined}
+        suppressCellFocus={true}
+      />
     </div>
   );
 }
