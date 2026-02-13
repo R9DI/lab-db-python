@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import SearchResult from '../components/SearchResult';
 
 function Search() {
@@ -50,12 +51,11 @@ function Search() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: fullQuery, topK: 10 }),
+      const res = await axios.post('/api/search', {
+        query: fullQuery,
+        topK: 10
       });
-      const data = await res.json();
+      const data = res.data;
 
       setMessages(prev => [
         ...prev,

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 function UploadPage() {
   const [file, setFile] = useState(null);
@@ -31,22 +32,21 @@ function UploadPage() {
     setStatus('업로드 중...');
     
     try {
-      const response = await fetch('http://localhost:3001/api/upload', {
-        method: 'POST',
-        body: formData,
+      const response = await axios.post('http://localhost:3001/api/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      const result = await response.json();
-      
-      if (response.ok) {
-        setStatus('업로드 성공!');
-        setDetails(result.details);
-      } else {
-        setStatus(`업로드 실패: ${result.error}`);
-      }
+      setStatus('업로드 성공!');
+      setDetails(response.data.details);
     } catch (error) {
       console.error('Upload Error:', error);
-      setStatus('서버 오류 발생');
+      if (error.response && error.response.data && error.response.data.error) {
+        setStatus(`업로드 실패: ${error.response.data.error}`);
+      } else {
+        setStatus('서버 오류 발생');
+      }
     }
   };
 
