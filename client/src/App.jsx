@@ -6,8 +6,6 @@ import UploadPage from "./pages/UploadPage";
 import NewExperiment from "./pages/NewExperiment";
 import LotAssign from "./pages/LotAssign";
 import ExperimentProgress from "./pages/ExperimentProgress";
-import ExperimentResults from "./pages/ExperimentResults";
-import Summary from "./pages/Summary";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
@@ -24,8 +22,6 @@ const mainNavItems = [
   { key: "db", label: "실험 DB", sub: dbSubPages },
   { key: "plan", label: "실험 계획", sub: planSubPages },
   { key: "progress", to: "/progress", label: "실험 진행" },
-  { key: "results", to: "/results", label: "실험 결과" },
-  { key: "summary", to: "/summary", label: "Summary" },
 ];
 
 function DropdownNav({ item, linkClass }) {
@@ -123,8 +119,6 @@ function App() {
           <Route path="/new-experiment" element={<NewExperiment />} />
           <Route path="/lot-assign" element={<LotAssign />} />
           <Route path="/progress" element={<ExperimentProgress />} />
-          <Route path="/results" element={<ExperimentResults />} />
-          <Route path="/summary" element={<Summary />} />
         </Routes>
       </main>
     </div>
