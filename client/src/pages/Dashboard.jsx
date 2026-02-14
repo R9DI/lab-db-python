@@ -4,6 +4,7 @@ import { AutoComplete } from "antd";
 import ProjectCard from "../components/ProjectCard";
 import ExperimentCard from "../components/ExperimentCard";
 import SplitTable from "../components/SplitTable";
+import SchemaOverview from "../components/SchemaOverview";
 
 const EMPTY_PROJECT_FORM = {
   project_name: "",
@@ -196,6 +197,9 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* 데이터 구조 다이어그램 */}
+      <SchemaOverview />
+
       {/* 과제 검색 및 목록 */}
       <section>
         <div className="flex justify-between items-center mb-4">

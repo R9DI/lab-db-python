@@ -23,7 +23,6 @@ const emptyProject = {
 };
 
 const emptyExperiment = {
-  plan_id: "",
   project_name: "",
   team: "",
   requester: "",
@@ -31,6 +30,8 @@ const emptyExperiment = {
   module: "",
   wf_direction: "",
   eval_process: "",
+  prev_eval: "",
+  cross_experiment: "",
   eval_category: "",
   eval_item: "",
   lot_request: "",
@@ -81,7 +82,7 @@ const projectFields = [
 ];
 
 const experimentFields = [
-  { key: "plan_id", label: "Plan ID *" },
+  { key: "eval_item", label: "평가 항목 *" },
   { key: "project_name", label: "과제명 *" },
   { key: "team", label: "팀" },
   { key: "requester", label: "요청자" },
@@ -90,7 +91,6 @@ const experimentFields = [
   { key: "wf_direction", label: "WF 방향" },
   { key: "eval_process", label: "평가 공정" },
   { key: "eval_category", label: "평가 카테고리" },
-  { key: "eval_item", label: "평가 항목" },
   { key: "lot_request", label: "LOT 요청" },
   { key: "reference", label: "참고" },
   { key: "volume_split", label: "Volume Split" },
@@ -193,22 +193,56 @@ function NewExperiment() {
   // AG Grid ref for split table
   const splitGridRef = useRef(null);
 
-  // WF toggle cell renderer
+  // WF toggle cell renderer — 같은 oper_id+oper_nm 그룹 내 웨이퍼 중복 배정 방지
   const WfCellRenderer = useCallback((params) => {
     const isOn = params.value === "O";
+    const field = params.colDef.field;
+    const currentRow = params.data;
+    const operId = currentRow.oper_id;
+    const operNm = currentRow.oper_nm;
+
+    // 같은 oper_id+oper_nm 그룹에서 이 웨이퍼가 이미 다른 행에 배정되었는지 확인
+    let conflictSplit = null;
+    if (!isOn && operId && operNm) {
+      params.api.forEachNode((node) => {
+        if (node === params.node) return;
+        const d = node.data;
+        if (d.oper_id === operId && d.oper_nm === operNm && d[field] === "O") {
+          conflictSplit = d.eps_lot_gbn_cd || "다른 행";
+        }
+      });
+    }
+
+    const isBlocked = conflictSplit !== null;
+
     return (
       <button
         onClick={() => {
+          if (isBlocked) {
+            alert(
+              `이 웨이퍼는 같은 공정(${operId} / ${operNm})의 "${conflictSplit}" 에 이미 배정되어 있습니다.`,
+            );
+            return;
+          }
           const newVal = isOn ? "" : "O";
-          params.node.setDataValue(params.colDef.field, newVal);
+          params.node.setDataValue(field, newVal);
         }}
+        title={
+          isBlocked
+            ? `${conflictSplit}에 배정됨`
+            : isOn
+              ? "클릭하여 해제"
+              : "클릭하여 배정"
+        }
         className={`w-6 h-6 rounded text-[10px] font-bold border transition ${
           isOn
             ? "bg-amber-400 text-white border-amber-500"
-            : "bg-white text-gray-300 border-gray-200 hover:border-amber-300"
+            : isBlocked
+              ? "bg-gray-100 text-gray-300 border-gray-200 cursor-not-allowed"
+              : "bg-white text-gray-300 border-gray-200 hover:border-amber-300"
         }`}
       >
-        {isOn ? "O" : ""}
+        {isOn ? "O" : isBlocked ? "—" : ""}
       </button>
     );
   }, []);
@@ -299,8 +333,8 @@ function NewExperiment() {
   };
 
   const handleSave = async () => {
-    if (!experiment.plan_id.trim()) {
-      alert("실험의 Plan ID를 입력해주세요.");
+    if (!experiment.eval_item?.trim()) {
+      alert("평가 항목을 입력해주세요.");
       return;
     }
     if (!experiment.project_name.trim()) {
@@ -314,9 +348,15 @@ function NewExperiment() {
     try {
       const results = {};
 
+      // 실험 조건의 과제명으로 과제 정보도 동기화
+      const syncedProject = {
+        ...project,
+        project_name: experiment.project_name,
+      };
+
       // 1. 과제 저장 (이미 있으면 무시됨)
       try {
-        await axios.post("/api/projects", project);
+        await axios.post("/api/projects", syncedProject);
         results.project = "새로 생성";
       } catch (err) {
         if (err.response?.status === 409) {
@@ -326,53 +366,39 @@ function NewExperiment() {
         }
       }
 
-      // 2. 실험 저장
-      const expForm = new FormData();
-      const BOM = "\uFEFF";
-      const expHeaders = Object.keys(emptyExperiment).join(",");
-      const expValues = Object.keys(emptyExperiment)
-        .map((k) => {
-          const v = experiment[k] || "";
-          return v.includes(",") ? `"${v}"` : v;
-        })
-        .join(",");
-      const expCsv = BOM + expHeaders + "\n" + expValues + "\n";
-      const expBlob = new Blob([expCsv], { type: "text/csv" });
-      expForm.append("file", expBlob, "experiment.csv");
-      expForm.append("type", "experiment");
-      const expRes = await axios.post("/api/upload", expForm);
-      results.experiment = `${expRes.data.details?.experimentCount || 1}건 저장`;
+      // 2. 실험 저장 (JSON 직접 호출)
+      const expRes = await axios.post("/api/experiments", experiment);
+      results.experiment = expRes.data ? "1건 저장" : "저장 실패";
 
-      // 3. 스플릿 저장
+      // 3. 스플릿 저장 (plan_id가 없으므로 experiment id 기반으로 임시 저장)
       if (
         splits.length > 0 &&
         splits.some((s) => s.oper_nm || s.work_cond_desc)
       ) {
-        const splitForm = new FormData();
-        const splitHeaders = Object.keys(emptySplit).join(",");
-        const splitRows = splits
-          .map((s) =>
-            Object.keys(emptySplit)
-              .map((k) => {
-                const v = s[k] || "";
-                return v.includes(",") ? `"${v}"` : v;
-              })
-              .join(","),
-          )
-          .join("\n");
-        const splitCsv = BOM + splitHeaders + "\n" + splitRows + "\n";
-        const splitBlob = new Blob([splitCsv], { type: "text/csv" });
-        splitForm.append("file", splitBlob, "splits.csv");
-        splitForm.append("type", "split");
-        const splitRes = await axios.post("/api/upload", splitForm);
-        results.splits = `${splitRes.data.details?.splitCount || splits.length}건 저장`;
+        // 실험 ID를 plan_id로 사용해서 split 저장 (나중에 lot 배정 시 업데이트)
+        const tempPlanId = `EXP-${expRes.data.id}`;
+        await axios.patch(`/api/experiments/${expRes.data.id}/status`, {
+          status: "Assign 전",
+        });
+        const splitRes = await axios.post(
+          `/api/experiments/${tempPlanId}/splits`,
+          { splits },
+        );
+        results.splits = `${splitRes.data.count || splits.length}건 저장`;
       }
 
       setSaveResult({ type: "success", details: results });
+
+      // 저장 성공 후 Lot Assign 페이지로 자동 이동
+      setTimeout(() => {
+        navigate("/lot-assign");
+      }, 1500);
     } catch (err) {
+      console.error("Save error:", err);
       setSaveResult({
         type: "error",
-        message: err.response?.data?.error || "저장 중 오류 발생",
+        message:
+          err.response?.data?.error || err.message || "저장 중 오류 발생",
       });
     }
     setSaving(false);
@@ -401,7 +427,7 @@ function NewExperiment() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">신규 실험 구성</h1>
+          <h1 className="text-2xl font-bold text-gray-800">신규 실험 신청</h1>
           <p className="text-sm text-gray-500 mt-1">
             실험 계획의 초안을 작성하고 DB에 저장합니다
           </p>
@@ -609,7 +635,7 @@ function NewExperiment() {
           disabled={saving}
           className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold text-sm transition disabled:opacity-50"
         >
-          {saving ? "저장 중..." : "💾 DB에 저장"}
+          {saving ? "저장 중..." : "Assign 요청"}
         </button>
       </div>
 

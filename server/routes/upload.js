@@ -27,7 +27,7 @@ const insertProject = db.prepare(`
 `);
 
 const insertExperiment = db.prepare(`
-  INSERT OR IGNORE INTO experiments (
+  INSERT INTO experiments (
     plan_id, project_name, team, requester, lot_code, module,
     wf_direction, eval_process, prev_eval, cross_experiment,
     eval_category, eval_item, lot_request, reference, volume_split, assign_wf
@@ -120,12 +120,10 @@ router.post("/", upload.single("file"), (req, res) => {
       } catch (err) {
         console.error("Database Error:", err);
         if (!res.headersSent) {
-          res
-            .status(500)
-            .json({
-              error: "Database error during insertion.",
-              details: err.message,
-            });
+          res.status(500).json({
+            error: "Database error during insertion.",
+            details: err.message,
+          });
         }
       }
     });
