@@ -10,8 +10,14 @@ class TfIdfSearchEngine {
     return text
       .toLowerCase()
       // 영문과 한글 경계에 공백 삽입 (예: "dishing을" → "dishing 을")
-      .replace(/([a-z0-9])([가-힣])/g, '$1 $2')
-      .replace(/([가-힣])([a-z0-9])/g, '$1 $2')
+      .replace(/([a-z])([가-힣])/g, '$1 $2')
+      .replace(/([가-힣])([a-z])/g, '$1 $2')
+      // 영문과 숫자 경계에 공백 삽입 (예: "test123" → "test 123")
+      .replace(/([a-z])([0-9])/g, '$1 $2')
+      .replace(/([0-9])([a-z])/g, '$1 $2')
+      // 한글과 숫자 경계에 공백 삽입
+      .replace(/([가-힣])([0-9])/g, '$1 $2')
+      .replace(/([0-9])([가-힣])/g, '$1 $2')
       // 특수문자 제거
       .replace(/[^a-z0-9ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, ' ')
       .split(/\s+/)
@@ -30,15 +36,16 @@ class TfIdfSearchEngine {
     });
 
     // Compute IDF
-    const dfMap = {};
+    this.dfMap = {};
     for (const tokenSet of allTokenSets) {
       for (const token of tokenSet) {
-        dfMap[token] = (dfMap[token] || 0) + 1;
+        this.dfMap[token] = (this.dfMap[token] || 0) + 1;
       }
     }
-    for (const [token, df] of Object.entries(dfMap)) {
+    for (const [token, df] of Object.entries(this.dfMap)) {
       this.idfCache[token] = Math.log(N / (1 + df)) + 1;
     }
+    this.docCount = N;
 
     // Compute TF-IDF vectors
     this.tfidfCache = documents.map(doc => {

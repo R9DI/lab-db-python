@@ -16,6 +16,7 @@ app.use("/api/experiments", require("./routes/experiments"));
 app.use("/api/splits", require("./routes/splits"));
 app.use("/api/search", require("./routes/search"));
 app.use("/api/upload", require("./routes/upload"));
+app.use("/api/llm-search", require("./routes/llm-search"));
 app.use("/api/line-lots", require("./routes/lineLots"));
 
 const PORT = 3001;

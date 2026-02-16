@@ -1,5 +1,6 @@
 const express = require("express");
 const { db } = require("../db");
+const { invalidateIndex } = require("./search");
 const router = express.Router();
 
 router.get("/", (req, res) => {
@@ -66,6 +67,7 @@ router.post("/", (req, res) => {
     const created = db
       .prepare("SELECT * FROM experiments WHERE id = ?")
       .get(result.lastInsertRowid);
+    invalidateIndex();
     res.status(201).json(created);
   } catch (err) {
     console.error("Error creating experiment:", err);
@@ -203,7 +205,7 @@ router.patch("/:id/status", (req, res) => {
   res.json({ message: "상태가 변경되었습니다.", status });
 });
 
-// 완료 토글 (split_completed / summary_completed)
+// 완료 토글 (split_completed / summary_completed) + Status 재계산
 router.patch("/:id/complete", (req, res) => {
   const { field, value } = req.body;
   if (!["split_completed", "summary_completed"].includes(field)) {
@@ -215,7 +217,79 @@ router.patch("/:id/complete", (req, res) => {
   if (result.changes === 0) {
     return res.status(404).json({ error: "실험을 찾을 수 없습니다." });
   }
+
+  // Fab이 In Fab이 아닐 때 Status 자동 재계산
+  const experiment = db
+    .prepare("SELECT * FROM experiments WHERE id = ?")
+    .get(req.params.id);
+  if (
+    experiment &&
+    experiment.fab_status &&
+    experiment.fab_status !== "In Fab"
+  ) {
+    const splitDone =
+      field === "split_completed"
+        ? value
+          ? 1
+          : 0
+        : experiment.split_completed;
+    const summaryDone =
+      field === "summary_completed"
+        ? value
+          ? 1
+          : 0
+        : experiment.summary_completed;
+    const newStatus =
+      splitDone && summaryDone
+        ? "실험 종료(결과 완료)"
+        : "실험 종료(결과 등록 전)";
+    db.prepare("UPDATE experiments SET status = ? WHERE id = ?").run(
+      newStatus,
+      req.params.id,
+    );
+  }
+
   res.json({ message: "업데이트 완료", [field]: value ? 1 : 0 });
+});
+
+// Fab 상태 변경 + Status 자동 계산
+router.patch("/:id/fab-status", (req, res) => {
+  const { fab_status } = req.body;
+  const validFabStatuses = ["In Fab", "Fab Out", "EPM", "WT"];
+  if (fab_status && !validFabStatuses.includes(fab_status)) {
+    return res.status(400).json({ error: "유효하지 않은 Fab 상태입니다." });
+  }
+
+  // 현재 실험 정보 조회
+  const experiment = db
+    .prepare("SELECT * FROM experiments WHERE id = ?")
+    .get(req.params.id);
+  if (!experiment) {
+    return res.status(404).json({ error: "실험을 찾을 수 없습니다." });
+  }
+
+  // Status 자동 계산
+  let newStatus;
+  if (fab_status === "In Fab") {
+    newStatus = "실험 진행 중";
+  } else {
+    // In Fab이 아닌 다른 값 (Fab Out, EPM, WT)
+    if (experiment.split_completed && experiment.summary_completed) {
+      newStatus = "실험 종료(결과 완료)";
+    } else {
+      newStatus = "실험 종료(결과 등록 전)";
+    }
+  }
+
+  db.prepare(
+    "UPDATE experiments SET fab_status = ?, status = ? WHERE id = ?",
+  ).run(fab_status, newStatus, req.params.id);
+
+  res.json({
+    message: "Fab 상태가 변경되었습니다.",
+    fab_status,
+    status: newStatus,
+  });
 });
 
 router.get("/:id", (req, res) => {

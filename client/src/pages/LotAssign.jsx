@@ -14,12 +14,14 @@ const STATUS = {
   DONE_COMPLETE: "실험 종료(결과 완료)",
 };
 
-const STATUS_LIST = [
-  STATUS.BEFORE_ASSIGN,
-  STATUS.IN_PROGRESS,
-  STATUS.DONE_NO_RESULT,
-  STATUS.DONE_COMPLETE,
-];
+const FAB_OPTIONS = ["In Fab", "Fab Out", "EPM", "WT"];
+
+const fabStyles = {
+  "In Fab": { bg: "bg-blue-100", text: "text-blue-700" },
+  "Fab Out": { bg: "bg-purple-100", text: "text-purple-700" },
+  EPM: { bg: "bg-teal-100", text: "text-teal-700" },
+  WT: { bg: "bg-orange-100", text: "text-orange-700" },
+};
 
 /* ─── 상태별 스타일 ─── */
 const statusStyles = {
@@ -198,16 +200,16 @@ function LotAssign() {
     [experiments],
   );
 
-  // 상태 변경 핸들러 (하단 테이블 드롭다운용)
-  const handleStatusChange = useCallback(
-    async (id, newStatus) => {
+  // Fab 상태 변경 핸들러 (Status 자동 계산)
+  const handleFabChange = useCallback(
+    async (id, fabStatus) => {
       try {
-        await axios.patch(`/api/experiments/${id}/status`, {
-          status: newStatus,
+        await axios.patch(`/api/experiments/${id}/fab-status`, {
+          fab_status: fabStatus,
         });
         fetchExperiments();
       } catch (err) {
-        console.error("상태 변경 실패:", err);
+        console.error("Fab 상태 변경 실패:", err);
       }
     },
     [fetchExperiments],
@@ -300,8 +302,8 @@ function LotAssign() {
     }
   }, []);
 
-  // ─── Status 셀 렌더러 ───
-  const StatusCellRenderer = useCallback((params) => {
+  // ─── Status 셀 렌더러 (자동 계산 - 읽기 전용) ───
+  const StatusAutoRenderer = useCallback((params) => {
     const currentStatus = params.data.status || STATUS.BEFORE_ASSIGN;
     const style =
       statusStyles[currentStatus] || statusStyles[STATUS.BEFORE_ASSIGN];
@@ -316,29 +318,34 @@ function LotAssign() {
     );
   }, []);
 
-  // ─── 상태 변경 드롭다운 렌더러 (진행 중 테이블) ───
-  const StatusSelectRenderer = useCallback(
+  // ─── Fab 드롭다운 렌더러 ───
+  const FabSelectRenderer = useCallback(
     (params) => {
-      const currentStatus = params.data.status || STATUS.IN_PROGRESS;
-      const style =
-        statusStyles[currentStatus] || statusStyles[STATUS.IN_PROGRESS];
+      const currentFab = params.data.fab_status || "";
+      const style = fabStyles[currentFab] || {
+        bg: "bg-gray-100",
+        text: "text-gray-500",
+      };
 
       return (
         <select
-          value={currentStatus}
-          onChange={(e) => handleStatusChange(params.data.id, e.target.value)}
-          className={`text-xs font-semibold rounded-full px-2.5 py-1 border-0 outline-none cursor-pointer ${style.bg} ${style.text}`}
+          value={currentFab}
+          onChange={(e) => handleFabChange(params.data.id, e.target.value)}
+          className={`text-xs font-semibold rounded-lg px-2 py-1 border-0 outline-none cursor-pointer ${style.bg} ${style.text}`}
           style={{ appearance: "auto" }}
         >
-          {STATUS_LIST.filter((s) => s !== STATUS.BEFORE_ASSIGN).map((s) => (
-            <option key={s} value={s}>
-              {s}
+          <option value="" disabled>
+            선택
+          </option>
+          {FAB_OPTIONS.map((f) => (
+            <option key={f} value={f}>
+              {f}
             </option>
           ))}
         </select>
       );
     },
-    [handleStatusChange],
+    [handleFabChange],
   );
 
   // ─── 보기 전용 아이콘 렌더러 (상단 테이블) ───
@@ -522,19 +529,19 @@ function LotAssign() {
         headerName: "평가 항목",
         field: "eval_item",
         minWidth: 180,
-        flex: 1,
+        flex: 2,
         cellStyle: { fontWeight: "600" },
       },
       {
         headerName: "과제명",
         field: "project_name",
         minWidth: 160,
-        flex: 1,
+        flex: 2,
       },
       {
         headerName: "Assign",
         field: "status",
-        width: 140,
+        width: 130,
         cellRenderer: (params) => (
           <button
             onClick={() => openAssignModal(params.data)}
@@ -550,7 +557,7 @@ function LotAssign() {
       {
         headerName: "Split Table",
         field: "split_view",
-        width: 110,
+        width: 100,
         cellRenderer: ViewButtonRenderer,
         cellStyle: {
           display: "flex",
@@ -571,14 +578,14 @@ function LotAssign() {
         headerName: "평가 항목",
         field: "eval_item",
         minWidth: 180,
-        flex: 1,
+        flex: 2,
         cellStyle: { fontWeight: "600" },
       },
       {
         headerName: "과제명",
         field: "project_name",
         minWidth: 160,
-        flex: 1,
+        flex: 2,
       },
       {
         headerName: "Plan ID",
@@ -587,16 +594,23 @@ function LotAssign() {
         cellStyle: { color: "#6366F1", fontWeight: "500" },
       },
       {
+        headerName: "Fab",
+        field: "fab_status",
+        width: 100,
+        cellRenderer: FabSelectRenderer,
+        cellStyle: { display: "flex", alignItems: "center" },
+      },
+      {
         headerName: "Status",
         field: "status",
-        width: 200,
-        cellRenderer: StatusSelectRenderer,
+        width: 190,
+        cellRenderer: StatusAutoRenderer,
         cellStyle: { display: "flex", alignItems: "center" },
       },
       {
         headerName: "Split Table",
         field: "split_view",
-        width: 110,
+        width: 100,
         cellRenderer: CheckboxModalRenderer,
         cellStyle: {
           display: "flex",
@@ -609,7 +623,7 @@ function LotAssign() {
       {
         headerName: "Summary",
         field: "summary_view",
-        width: 110,
+        width: 100,
         cellRenderer: CheckboxModalRenderer,
         cellStyle: {
           display: "flex",
@@ -620,7 +634,7 @@ function LotAssign() {
         filter: false,
       },
     ],
-    [StatusSelectRenderer, CheckboxModalRenderer],
+    [FabSelectRenderer, StatusAutoRenderer, CheckboxModalRenderer],
   );
 
   const defaultColDef = useMemo(
@@ -652,7 +666,7 @@ function LotAssign() {
       {/* ─── 상단: Assign 전 ─── */}
       <div>
         <div className="mb-3">
-          <h1 className="text-2xl font-bold text-gray-800">실험 Lot Assign</h1>
+          <h2 className="text-xl font-bold text-gray-800">실험 Lot Assign</h2>
           <p className="text-sm text-gray-500 mt-1">
             Lot 배정 대기 중인 실험 —{" "}
             <b className="text-gray-700">{pendingExperiments.length}건</b>

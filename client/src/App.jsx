@@ -6,6 +6,7 @@ import UploadPage from "./pages/UploadPage";
 import NewExperiment from "./pages/NewExperiment";
 import LotAssign from "./pages/LotAssign";
 import ExperimentProgress from "./pages/ExperimentProgress";
+import LLMSearch from "./pages/LLMSearch";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
@@ -14,6 +15,7 @@ const dbSubPages = [
 
 const planSubPages = [
   { to: "/search", label: "실험 탐색" },
+  { to: "/llm-search", label: "실험 탐색(LLM)" },
   { to: "/new-experiment", label: "신규 실험" },
   { to: "/lot-assign", label: "Lot Assign" },
 ];
@@ -117,6 +119,7 @@ function App() {
           <Route path="/search" element={<Search />} />
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/new-experiment" element={<NewExperiment />} />
+          <Route path="/llm-search" element={<LLMSearch />} />
           <Route path="/lot-assign" element={<LotAssign />} />
           <Route path="/progress" element={<ExperimentProgress />} />
         </Routes>

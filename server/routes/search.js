@@ -33,61 +33,20 @@ function extractSuggestions(results, originalQuery) {
   const N = results.length;
   const queryTokens = new Set(engine.tokenize(originalQuery));
 
-  const stopWords = new Set([
-    "advanced",
-    "inline",
-    "epm",
-    "split",
-    "x",
-    "o",
-    "base",
-    "dram",
-    "향",
-    "및",
-    "위한",
-    "통해",
-    "기반",
-    "위해",
-    "후",
-    "시",
-    "내",
-    "의",
-    "을",
-    "를",
-    "이",
-    "가",
-    "에",
-    "는",
-    "은",
-    "로",
-    "으로",
-    "과",
-    "와",
-    "개발",
-    "과제",
-    "평가",
-    "확보",
-    "기술",
-    "필요",
-    "적용",
-    "최적화",
-    "형성",
-    "공정",
-    "조건",
-    "목적",
-    "결과",
-    "수준",
-    "방안",
-    "진행",
-    "대비",
-    "예정",
-    "구현",
-    "검증",
-    "요소",
-    "항목",
-    "추가",
-    "변경",
+  // 동적 불용어: 전체 문서의 40% 이상에 등장하는 토큰 + 한글 조사/1글자
+  const GRAMMAR_STOPS = new Set([
+    "향", "및", "위한", "통해", "기반", "위해", "후", "시", "내",
+    "의", "을", "를", "이", "가", "에", "는", "은", "로", "으로",
+    "과", "와", "도", "에서", "까지", "부터", "대한", "된", "한", "할",
+    "x", "o",
   ]);
+  const stopWords = new Set(GRAMMAR_STOPS);
+  if (engine.dfMap && engine.docCount > 0) {
+    const threshold = engine.docCount * 0.4;
+    for (const [token, df] of Object.entries(engine.dfMap)) {
+      if (df >= threshold) stopWords.add(token);
+    }
+  }
 
   // 0단계: 각 결과의 전체 문서 텍스트를 미리 계산 (실제 검색 필터와 동일한 기준)
   const fullDocTexts = results.map((r) => {
@@ -306,4 +265,9 @@ router.post("/reindex", (req, res) => {
   res.json({ message: "Reindexed", documentCount: engine.documents.length });
 });
 
+function invalidateIndex() {
+  indexed = false;
+}
+
 module.exports = router;
+module.exports.invalidateIndex = invalidateIndex;

@@ -3,6 +3,8 @@ const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
 const { db } = require("../db");
+const { invalidateIndex } = require("./search");
+const { invalidateIndex: invalidateLLMIndex } = require("./llm-search");
 const router = express.Router();
 
 const uploadDir = "uploads/";
@@ -112,6 +114,8 @@ router.post("/", upload.single("file"), (req, res) => {
         });
 
         const counts = transaction(results);
+        invalidateIndex();
+        invalidateLLMIndex();
         res.json({
           message: "Process completed",
           details: counts,

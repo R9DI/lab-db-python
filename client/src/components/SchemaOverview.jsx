@@ -43,7 +43,7 @@ const TABLES = [
       { name: "project_code", type: "TEXT" },
       { name: "dev_type", type: "TEXT" },
       { name: "project_purpose", type: "TEXT" },
-      { name: "...", type: "", note: "외 5개 필드" },
+      { name: "...", type: "", note: "외 13개 필드" },
     ],
   },
   {
@@ -68,9 +68,9 @@ const TABLES = [
       },
       { name: "eval_item", type: "TEXT" },
       { name: "eval_process", type: "TEXT" },
-      { name: "status", type: "TEXT" },
+      { name: "status / fab_status", type: "TEXT" },
       { name: "team / requester", type: "TEXT" },
-      { name: "...", type: "", note: "외 8개 필드" },
+      { name: "...", type: "", note: "외 12개 필드" },
     ],
   },
   {
@@ -81,7 +81,9 @@ const TABLES = [
     fields: [
       { name: "id", type: "PK", pk: true },
       { name: "plan_id", type: "FK → Experiments", fk: true, highlight: true },
+      { name: "fac_id", type: "TEXT" },
       { name: "oper_id / oper_nm", type: "TEXT" },
+      { name: "eps_lot_gbn_cd", type: "TEXT", note: "Split 구분" },
       { name: "eqp_id / recipe_id", type: "TEXT" },
       { name: "work_cond_desc", type: "TEXT" },
       { name: "user_def_val_1~15", type: "TEXT", note: "WF 배정" },
