@@ -78,12 +78,12 @@ router.post("/", upload.single("file"), (req, res) => {
       }
 
       try {
-        const transaction = db.transaction((rows) => {
-          let projectCount = 0;
-          let experimentCount = 0;
-          let splitCount = 0;
-
-          for (const row of rows) {
+        let projectCount = 0;
+        let experimentCount = 0;
+        let splitCount = 0;
+        db.exec("BEGIN");
+        try {
+          for (const row of results) {
             if (type === "project") {
               if (!row.project_name) continue;
               const res = insertProject.run(row);
@@ -110,10 +110,12 @@ router.post("/", upload.single("file"), (req, res) => {
               }
             }
           }
-          return { projectCount, experimentCount, splitCount };
-        });
-
-        const counts = transaction(results);
+          db.exec("COMMIT");
+        } catch (txErr) {
+          db.exec("ROLLBACK");
+          throw txErr;
+        }
+        const counts = { projectCount, experimentCount, splitCount };
         invalidateIndex();
         invalidateLLMIndex();
         res.json({

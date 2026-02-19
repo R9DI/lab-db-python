@@ -87,8 +87,9 @@ router.delete("/:id", (req, res) => {
   if (!project) return res.status(404).json({ error: "Project not found" });
 
   try {
-    const deleteAll = db.transaction(() => {
-      // 해당 과제의 실험들의 plan_id로 split_tables 삭제
+    let counts;
+    db.exec("BEGIN");
+    try {
       const experiments = db
         .prepare("SELECT plan_id FROM experiments WHERE project_name = ?")
         .all(project.project_name);
@@ -97,16 +98,16 @@ router.delete("/:id", (req, res) => {
           exp.plan_id,
         );
       }
-      // 실험 삭제
       const expResult = db
         .prepare("DELETE FROM experiments WHERE project_name = ?")
         .run(project.project_name);
-      // 과제 삭제
       db.prepare("DELETE FROM projects WHERE id = ?").run(req.params.id);
-      return { experiments: expResult.changes, splits: experiments.length };
-    });
-
-    const counts = deleteAll();
+      counts = { experiments: expResult.changes, splits: experiments.length };
+      db.exec("COMMIT");
+    } catch (txErr) {
+      db.exec("ROLLBACK");
+      throw txErr;
+    }
     res.json({
       message: "과제 삭제 완료",
       deleted: { project: project.project_name, ...counts },
