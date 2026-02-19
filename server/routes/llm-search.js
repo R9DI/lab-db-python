@@ -45,13 +45,13 @@ function ensureIndex() {
     .prepare(
       `
     SELECT e.*,
-      p.project_purpose, p.project_goal, p.current_status,
-      p.first_target_tech, p.second_target_tech, p.module as project_module,
-      p.dev_type, p.dev_category, p.verification_lv, p.preceding_type,
-      p.target_device, p.htrs_link, p.htrs_color, p.nudd,
-      p.project_code, p.start_date, p.pm, p.project_grade
+      p.project_purpose, p.iacpj_ta_goa, p.iacpj_cur_stt,
+      p.iacpj_tech_n, p.iacpj_mod_n as project_module,
+      p.iacpj_tgt_n, p.iacpj_level,
+      p.ia_tgt_htr_n, p.iacpj_nud_n,
+      p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n
     FROM experiments e
-    LEFT JOIN projects p ON e.project_name = p.project_name
+    LEFT JOIN projects p ON e.project_name = p.iacpj_nm
   `,
     )
     .all();
@@ -78,10 +78,10 @@ function experimentToContext(result, idx) {
   if (proj) {
     text += `
   - 과제 목적: ${proj.project_purpose || "N/A"}
-  - 과제 목표: ${proj.project_goal || "N/A"}
-  - 현재 상태: ${proj.current_status || "N/A"}
-  - 대상 기술: ${proj.first_target_tech || "N/A"}
-  - 개발 유형: ${proj.dev_type || "N/A"}`;
+  - 과제 목표: ${proj.iacpj_ta_goa || "N/A"}
+  - 현재 상태: ${proj.iacpj_cur_stt || "N/A"}
+  - 대상 기술: ${proj.iacpj_tech_n || "N/A"}
+  - 분류: ${proj.iacpj_tgt_n || "N/A"}`;
   }
 
   if (splits.length > 0) {
@@ -209,7 +209,7 @@ router.post("/", async (req, res) => {
       .prepare("SELECT * FROM split_tables WHERE plan_id = ?")
       .all(r.document.plan_id);
     const project = db
-      .prepare("SELECT * FROM projects WHERE project_name = ?")
+      .prepare("SELECT * FROM projects WHERE iacpj_nm = ?")
       .get(r.document.project_name);
     return {
       score: Math.round(r.score * 1000) / 1000,

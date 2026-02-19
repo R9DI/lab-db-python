@@ -100,13 +100,12 @@ function SummaryContent({ experiment, project }) {
   ];
 
   const projFields = [
-    { label: "과제명", value: project?.project_name },
-    { label: "모듈", value: project?.module },
-    { label: "PM", value: project?.pm },
-    { label: "과제 코드", value: project?.project_code },
-    { label: "개발 유형", value: project?.dev_type },
-    { label: "대상 디바이스", value: project?.target_device },
-    { label: "과제 등급", value: project?.project_grade },
+    { label: "과제명", value: project?.iacpj_nm },
+    { label: "모듈", value: project?.iacpj_mod_n },
+    { label: "PM", value: project?.iacpj_ch_n },
+    { label: "과제 코드", value: project?.iacpj_itf_uno },
+    { label: "개발 분류", value: project?.iacpj_tgt_n },
+    { label: "과제 등급", value: project?.ia_ta_grd_n },
   ];
 
   return (

@@ -61,16 +61,15 @@ function SearchResult({ result, rank }) {
           <div className="mt-3">
             <div className="p-2 bg-indigo-50 rounded text-xs">
               <div className="flex gap-4 flex-wrap mb-1">
-                <span>Tech: <b>{project.first_target_tech}</b></span>
-                <span>PM: <b>{project.pm}</b></span>
-                <span>등급: <b>{project.project_grade}</b></span>
-                <span>검증LV: <b>{project.verification_lv}</b></span>
-                <span>모듈: <b>{project.module}</b></span>
-                <span>Device: <b>{project.target_device}</b></span>
+                <span>Tech: <b>{project.iacpj_tech_n}</b></span>
+                <span>PM: <b>{project.iacpj_ch_n}</b></span>
+                <span>등급: <b>{project.ia_ta_grd_n}</b></span>
+                <span>검증LV: <b>{project.iacpj_level}</b></span>
+                <span>모듈: <b>{project.iacpj_mod_n}</b></span>
                 <span className={`px-1.5 py-0.5 rounded ${
-                  project.htrs_color === 'Red' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
+                  project.ia_tgt_htr_n === 'Red' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-600'
                 }`}>
-                  {project.htrs_color}
+                  {project.ia_tgt_htr_n}
                 </span>
               </div>
               <button
@@ -89,11 +88,11 @@ function SearchResult({ result, rank }) {
                 </div>
                 <div>
                   <span className="text-gray-400 font-medium block mb-0.5">프로젝트 목표</span>
-                  <p className="text-gray-700 whitespace-pre-wrap">{project.project_goal || '-'}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{project.iacpj_ta_goa || '-'}</p>
                 </div>
                 <div>
                   <span className="text-gray-400 font-medium block mb-0.5">현 상황</span>
-                  <p className="text-gray-700 whitespace-pre-wrap">{project.current_status || '-'}</p>
+                  <p className="text-gray-700 whitespace-pre-wrap">{project.iacpj_cur_stt || '-'}</p>
                 </div>
               </div>
             )}

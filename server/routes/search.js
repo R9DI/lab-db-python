@@ -11,13 +11,13 @@ function ensureIndex() {
     .prepare(
       `
     SELECT e.*,
-      p.project_purpose, p.project_goal, p.current_status,
-      p.first_target_tech, p.second_target_tech, p.module as project_module,
-      p.dev_type, p.dev_category, p.verification_lv, p.preceding_type,
-      p.target_device, p.htrs_link, p.htrs_color, p.nudd,
-      p.project_code, p.start_date, p.pm, p.project_grade
+      p.project_purpose, p.iacpj_ta_goa, p.iacpj_cur_stt,
+      p.iacpj_tech_n, p.iacpj_mod_n as project_module,
+      p.iacpj_tgt_n, p.iacpj_level,
+      p.ia_tgt_htr_n, p.iacpj_nud_n,
+      p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n
     FROM experiments e
-    LEFT JOIN projects p ON e.project_name = p.project_name
+    LEFT JOIN projects p ON e.project_name = p.iacpj_nm
   `,
     )
     .all();
@@ -70,9 +70,9 @@ function extractSuggestions(results, originalQuery) {
       { field: "Plan ID", text: exp.plan_id },
       { field: "LOT", text: exp.lot_code },
       { field: "요청자", text: exp.requester },
-      { field: "Tech", text: proj?.first_target_tech || exp.first_target_tech },
-      { field: "목표", text: proj?.project_goal || exp.project_goal },
-      { field: "현황", text: proj?.current_status || exp.current_status },
+      { field: "Tech", text: proj?.iacpj_tech_n },
+      { field: "목표", text: proj?.iacpj_ta_goa },
+      { field: "현황", text: proj?.iacpj_cur_stt },
     ];
 
     // Split table에서 차별화 키워드 추출
@@ -184,7 +184,7 @@ function generateSummary(results, query) {
   // 과제별로 그룹핑
   const projectGroups = {};
   for (const r of results) {
-    const pName = r.project?.project_name || r.experiment?.project_name;
+    const pName = r.project?.iacpj_nm || r.experiment?.project_name;
     if (!projectGroups[pName]) {
       projectGroups[pName] = {
         project: r.project,
@@ -202,7 +202,7 @@ function generateSummary(results, query) {
 
   for (const [name, group] of Object.entries(projectGroups)) {
     const module =
-      group.project?.module || group.experiments[0]?.experiment?.module || "";
+      group.project?.iacpj_mod_n || group.experiments[0]?.experiment?.module || "";
     lines.push(`\n[${module}] ${name} - ${group.experiments.length}건`);
     for (const exp of group.experiments.slice(0, 3)) {
       lines.push(`  - ${exp.experiment.eval_item} (${exp.experiment.plan_id})`);
@@ -228,7 +228,7 @@ router.post("/", (req, res) => {
       .prepare("SELECT * FROM split_tables WHERE plan_id = ?")
       .all(r.document.plan_id);
     const project = db
-      .prepare("SELECT * FROM projects WHERE project_name = ?")
+      .prepare("SELECT * FROM projects WHERE iacpj_nm = ?")
       .get(r.document.project_name);
     return {
       score: Math.round(r.score * 1000) / 1000,

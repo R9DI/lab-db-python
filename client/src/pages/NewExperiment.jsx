@@ -8,18 +8,16 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 /* ─── 기본 빈 양식 ─── */
 const emptyProject = {
-  project_name: "",
-  module: "",
-  pm: "",
-  project_code: "",
-  dev_type: "",
-  dev_category: "",
-  verification_lv: "",
-  target_device: "",
-  first_target_tech: "",
-  project_grade: "",
+  iacpj_nm: "",
+  iacpj_mod_n: "",
+  iacpj_ch_n: "",
+  iacpj_itf_uno: "",
+  iacpj_tgt_n: "",
+  iacpj_level: "",
+  iacpj_tech_n: "",
+  ia_ta_grd_n: "",
   project_purpose: "",
-  project_goal: "",
+  iacpj_ta_goa: "",
 };
 
 const emptyExperiment = {
@@ -69,16 +67,14 @@ const emptySplit = {
 
 /* ─── 필드 정의 ─── */
 const projectFields = [
-  { key: "project_name", label: "과제명 *" },
-  { key: "module", label: "모듈" },
-  { key: "pm", label: "PM" },
-  { key: "project_code", label: "과제 코드" },
-  { key: "dev_type", label: "개발 유형" },
-  { key: "dev_category", label: "개발 분류" },
-  { key: "verification_lv", label: "검증 레벨" },
-  { key: "target_device", label: "대상 디바이스" },
-  { key: "first_target_tech", label: "1차 대상 기술" },
-  { key: "project_grade", label: "과제 등급" },
+  { key: "iacpj_nm", label: "과제명 *" },
+  { key: "iacpj_mod_n", label: "모듈" },
+  { key: "iacpj_ch_n", label: "PM" },
+  { key: "iacpj_itf_uno", label: "과제 코드" },
+  { key: "iacpj_tgt_n", label: "개발 분류" },
+  { key: "iacpj_level", label: "검증 레벨" },
+  { key: "iacpj_tech_n", label: "1차 대상 기술" },
+  { key: "ia_ta_grd_n", label: "과제 등급" },
 ];
 
 const experimentFields = [
@@ -351,7 +347,7 @@ function NewExperiment() {
       // 실험 조건의 과제명으로 과제 정보도 동기화
       const syncedProject = {
         ...project,
-        project_name: experiment.project_name,
+        iacpj_nm: experiment.project_name,
       };
 
       // 1. 과제 저장 (이미 있으면 무시됨)
@@ -553,8 +549,8 @@ function NewExperiment() {
                 과제 목표
               </label>
               <textarea
-                value={project.project_goal}
-                onChange={(e) => updateProject("project_goal", e.target.value)}
+                value={project.iacpj_ta_goa}
+                onChange={(e) => updateProject("iacpj_ta_goa", e.target.value)}
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
               />
@@ -626,7 +622,7 @@ function NewExperiment() {
       <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center justify-between">
         <div className="text-sm text-gray-500">
           <span className="font-medium text-gray-700">요약</span>: 과제{" "}
-          <b className="text-indigo-600">{project.project_name || "—"}</b> |
+          <b className="text-indigo-600">{project.iacpj_nm || "—"}</b> |
           실험 <b className="text-emerald-600">{experiment.plan_id || "—"}</b> |
           Split <b className="text-amber-600">{splits.length}건</b>
         </div>

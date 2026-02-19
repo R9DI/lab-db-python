@@ -7,18 +7,16 @@ import SplitTable from "../components/SplitTable";
 import SchemaOverview from "../components/SchemaOverview";
 
 const EMPTY_PROJECT_FORM = {
-  project_name: "",
-  module: "",
-  pm: "",
-  project_code: "",
-  dev_type: "",
-  dev_category: "",
-  verification_lv: "",
-  target_device: "",
-  first_target_tech: "",
-  project_grade: "",
+  iacpj_nm: "",
+  iacpj_mod_n: "",
+  iacpj_ch_n: "",
+  iacpj_itf_uno: "",
+  iacpj_tgt_n: "",
+  iacpj_level: "",
+  iacpj_tech_n: "",
+  ia_ta_grd_n: "",
   project_purpose: "",
-  project_goal: "",
+  iacpj_ta_goa: "",
 };
 
 function Dashboard() {
@@ -45,8 +43,8 @@ function Dashboard() {
         setProjects(res.data);
         setProjectOptions(
           res.data.map((p) => ({
-            value: p.project_name,
-            label: p.project_name,
+            value: p.iacpj_nm,
+            label: p.iacpj_nm,
             project: p,
           })),
         );
@@ -60,7 +58,7 @@ function Dashboard() {
 
   // 과제 추가
   const addProject = async () => {
-    if (!newProject.project_name.trim()) {
+    if (!newProject.iacpj_nm.trim()) {
       alert("과제명은 필수입니다.");
       return;
     }
@@ -97,10 +95,9 @@ function Dashboard() {
     setExperimentSearchText("");
     try {
       const res = await axios.get(
-        `/api/experiments?project_name=${encodeURIComponent(project.project_name)}`,
+        `/api/experiments?project_name=${encodeURIComponent(project.iacpj_nm)}`,
       );
       setExperiments(res.data);
-      // Initialize experiment autocomplete options
       setExperimentOptions(
         res.data.map((e) => ({
           value: e.eval_item,
@@ -117,18 +114,18 @@ function Dashboard() {
     if (!value) {
       setProjectOptions(
         projects.map((p) => ({
-          value: p.project_name,
-          label: p.project_name,
+          value: p.iacpj_nm,
+          label: p.iacpj_nm,
           project: p,
         })),
       );
       return;
     }
     const filtered = projects
-      .filter((p) => p.project_name.toLowerCase().includes(value.toLowerCase()))
+      .filter((p) => p.iacpj_nm.toLowerCase().includes(value.toLowerCase()))
       .map((p) => ({
-        value: p.project_name,
-        label: p.project_name,
+        value: p.iacpj_nm,
+        label: p.iacpj_nm,
         project: p,
       }));
     setProjectOptions(filtered);
@@ -183,7 +180,6 @@ function Dashboard() {
     }
   };
 
-  // Filter displayed experiment cards based on search text
   const filteredExperiments = experimentSearchText
     ? experiments.filter((e) => {
         const lowerSearch = experimentSearchText.toLowerCase();
@@ -251,7 +247,7 @@ function Dashboard() {
               실험 목록
               <span className="text-sm text-gray-400 font-normal">
                 ({filteredExperiments.length}/{experiments.length}건 |{" "}
-                {selectedProject.project_name})
+                {selectedProject.iacpj_nm})
               </span>
             </h2>
             <div className="w-72">
@@ -313,48 +309,14 @@ function Dashboard() {
             </div>
             <div className="px-6 py-4 space-y-3">
               {[
-                {
-                  key: "project_name",
-                  label: "과제명 *",
-                  placeholder: "과제명 입력 (필수)",
-                },
-                { key: "module", label: "모듈", placeholder: "Cell, Peri 등" },
-                { key: "pm", label: "PM", placeholder: "담당자 이름" },
-                {
-                  key: "project_code",
-                  label: "과제 코드",
-                  placeholder: "PRJ-2025-001",
-                },
-                {
-                  key: "dev_type",
-                  label: "개발 유형",
-                  placeholder: "신규개발, 양산적용 등",
-                },
-                {
-                  key: "dev_category",
-                  label: "개발 분류",
-                  placeholder: "DRAM, NAND 등",
-                },
-                {
-                  key: "verification_lv",
-                  label: "검증 레벨",
-                  placeholder: "Lv1, Lv2 등",
-                },
-                {
-                  key: "target_device",
-                  label: "대상 디바이스",
-                  placeholder: "D1a, D1b 등",
-                },
-                {
-                  key: "first_target_tech",
-                  label: "1차 대상 기술",
-                  placeholder: "1a DRAM 등",
-                },
-                {
-                  key: "project_grade",
-                  label: "과제 등급",
-                  placeholder: "S, A, B 등",
-                },
+                { key: "iacpj_nm", label: "과제명 *", placeholder: "과제명 입력 (필수)" },
+                { key: "iacpj_mod_n", label: "모듈", placeholder: "Cell, Peri 등" },
+                { key: "iacpj_ch_n", label: "PM", placeholder: "담당자 이름" },
+                { key: "iacpj_itf_uno", label: "과제 코드", placeholder: "PRJ-2025-001" },
+                { key: "iacpj_tgt_n", label: "개발 분류", placeholder: "DRAM, NAND 등" },
+                { key: "iacpj_level", label: "검증 레벨", placeholder: "Lv1, Lv2 등" },
+                { key: "iacpj_tech_n", label: "1차 대상 기술", placeholder: "1a DRAM 등" },
+                { key: "ia_ta_grd_n", label: "과제 등급", placeholder: "S, A, B 등" },
               ].map(({ key, label, placeholder }) => (
                 <div key={key}>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -378,10 +340,7 @@ function Dashboard() {
                 <textarea
                   value={newProject.project_purpose}
                   onChange={(e) =>
-                    setNewProject({
-                      ...newProject,
-                      project_purpose: e.target.value,
-                    })
+                    setNewProject({ ...newProject, project_purpose: e.target.value })
                   }
                   placeholder="과제의 주요 목적을 입력하세요"
                   rows={2}
@@ -393,12 +352,9 @@ function Dashboard() {
                   과제 목표
                 </label>
                 <textarea
-                  value={newProject.project_goal}
+                  value={newProject.iacpj_ta_goa}
                   onChange={(e) =>
-                    setNewProject({
-                      ...newProject,
-                      project_goal: e.target.value,
-                    })
+                    setNewProject({ ...newProject, iacpj_ta_goa: e.target.value })
                   }
                   placeholder="달성 목표를 입력하세요"
                   rows={2}

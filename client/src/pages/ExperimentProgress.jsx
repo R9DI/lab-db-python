@@ -17,22 +17,19 @@ function ProjectInfoTab({ project }) {
   if (!project) return null;
 
   const fields = [
-    { label: "과제명", value: project.project_name },
-    { label: "모듈", value: project.module },
-    { label: "PM", value: project.pm },
-    { label: "과제 코드", value: project.project_code },
-    { label: "개발 유형", value: project.dev_type },
-    { label: "개발 카테고리", value: project.dev_category },
-    { label: "검증 수준", value: project.verification_lv },
-    { label: "대상 디바이스", value: project.target_device },
-    { label: "1차 대상 기술", value: project.first_target_tech },
-    { label: "2차 대상 기술", value: project.second_target_tech },
-    { label: "과제 등급", value: project.project_grade },
-    { label: "선행 유형", value: project.preceding_type },
-    { label: "HTRS 링크", value: project.htrs_link },
-    { label: "NUDD", value: project.nudd },
-    { label: "시작일", value: project.start_date },
-    { label: "현재 상태", value: project.current_status },
+    { label: "과제명", value: project.iacpj_nm },
+    { label: "모듈", value: project.iacpj_mod_n },
+    { label: "PM", value: project.iacpj_ch_n },
+    { label: "과제 코드", value: project.iacpj_itf_uno },
+    { label: "개발 분류", value: project.iacpj_tgt_n },
+    { label: "검증 수준", value: project.iacpj_level },
+    { label: "1차 대상 기술", value: project.iacpj_tech_n },
+    { label: "과제 등급", value: project.ia_ta_grd_n },
+    { label: "HTRS", value: project.ia_tgt_htr_n },
+    { label: "NUDD", value: project.iacpj_nud_n },
+    { label: "시작일", value: project.iacpj_bgn_dy },
+    { label: "종료일", value: project.iacpj_end_dy },
+    { label: "현재 상태", value: project.iacpj_cur_stt },
   ];
 
   return (
@@ -58,12 +55,12 @@ function ProjectInfoTab({ project }) {
           <p className="text-sm text-gray-700">{project.project_purpose}</p>
         </div>
       )}
-      {project.project_goal && (
+      {project.iacpj_ta_goa && (
         <div className="bg-gray-50 rounded-lg p-3">
           <span className="text-[11px] text-gray-500 block mb-0.5">
             과제 목표
           </span>
-          <p className="text-sm text-gray-700">{project.project_goal}</p>
+          <p className="text-sm text-gray-700">{project.iacpj_ta_goa}</p>
         </div>
       )}
     </div>
@@ -164,7 +161,7 @@ function ExperimentProgress() {
       return;
     }
     axios
-      .get(`/api/experiments?project_name=${encodeURIComponent(selectedProject.project_name)}`)
+      .get(`/api/experiments?project_name=${encodeURIComponent(selectedProject.iacpj_nm)}`)
       .then((res) => setExperiments(res.data))
       .catch((err) => console.error("실험 목록 로드 실패:", err));
     setSelectedExperiment(null);
@@ -175,7 +172,7 @@ function ExperimentProgress() {
     if (!searchText.trim()) return projects;
     const lower = searchText.toLowerCase();
     return projects.filter((p) =>
-      p.project_name.toLowerCase().includes(lower),
+      p.iacpj_nm.toLowerCase().includes(lower),
     );
   }, [projects, searchText]);
 
@@ -314,14 +311,14 @@ function ExperimentProgress() {
               className="text-left bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-md transition cursor-pointer"
             >
               <h3 className="font-bold text-gray-800 text-sm mb-1.5">
-                {project.project_name}
+                {project.iacpj_nm}
               </h3>
               <div className="flex items-center gap-3 text-xs text-gray-500">
-                {project.module && <span>모듈: {project.module}</span>}
-                {project.pm && <span>PM: {project.pm}</span>}
-                {project.project_grade && (
+                {project.iacpj_mod_n && <span>모듈: {project.iacpj_mod_n}</span>}
+                {project.iacpj_ch_n && <span>PM: {project.iacpj_ch_n}</span>}
+                {project.ia_ta_grd_n && (
                   <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded font-medium">
-                    {project.project_grade}
+                    {project.ia_ta_grd_n}
                   </span>
                 )}
               </div>
@@ -363,13 +360,13 @@ function ExperimentProgress() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
-            {selectedProject.project_name}
+            {selectedProject.iacpj_nm}
           </h1>
           <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-            {selectedProject.module && (
-              <span>모듈: {selectedProject.module}</span>
+            {selectedProject.iacpj_mod_n && (
+              <span>모듈: {selectedProject.iacpj_mod_n}</span>
             )}
-            {selectedProject.pm && <span>PM: {selectedProject.pm}</span>}
+            {selectedProject.iacpj_ch_n && <span>PM: {selectedProject.iacpj_ch_n}</span>}
           </div>
         </div>
       </div>

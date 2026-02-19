@@ -15,52 +15,56 @@ router.get("/:id", (req, res) => {
 
   const experiments = db
     .prepare("SELECT * FROM experiments WHERE project_name = ?")
-    .all(project.project_name);
+    .all(project.iacpj_nm);
   res.json({ ...project, experiments });
 });
 
 // 과제 추가
 router.post("/", (req, res) => {
-  const { project_name } = req.body;
-  if (!project_name || !project_name.trim()) {
-    return res.status(400).json({ error: "project_name은 필수입니다." });
+  const { iacpj_nm } = req.body;
+  if (!iacpj_nm || !iacpj_nm.trim()) {
+    return res.status(400).json({ error: "iacpj_nm은 필수입니다." });
   }
 
   try {
     const stmt = db.prepare(`
       INSERT INTO projects (
-        project_name, dev_type, dev_category, verification_lv,
-        preceding_type, target_device, first_target_tech, second_target_tech,
-        htrs_link, htrs_color, nudd, module, project_code, start_date,
-        pm, project_grade, project_purpose, project_goal, current_status
+        iacpj_nm, iacpj_tgt_n, iacpj_level, iacpj_tech_n,
+        ia_tgt_htr_n, iacpj_nud_n, iacpj_mod_n, iacpj_itf_uno, iacpj_bgn_dy,
+        iacpj_ch_n, ia_ta_grd_n, project_purpose, iacpj_ta_goa, iacpj_cur_stt,
+        iacpj_ch_i, ia_ch_or_i, ia_ch_or_n, ia_ch_or_path, iacpj_core_tec,
+        iacpj_end_dy, iacpj_reg_dy
       ) VALUES (
-        @project_name, @dev_type, @dev_category, @verification_lv,
-        @preceding_type, @target_device, @first_target_tech, @second_target_tech,
-        @htrs_link, @htrs_color, @nudd, @module, @project_code, @start_date,
-        @pm, @project_grade, @project_purpose, @project_goal, @current_status
+        @iacpj_nm, @iacpj_tgt_n, @iacpj_level, @iacpj_tech_n,
+        @ia_tgt_htr_n, @iacpj_nud_n, @iacpj_mod_n, @iacpj_itf_uno, @iacpj_bgn_dy,
+        @iacpj_ch_n, @ia_ta_grd_n, @project_purpose, @iacpj_ta_goa, @iacpj_cur_stt,
+        @iacpj_ch_i, @ia_ch_or_i, @ia_ch_or_n, @ia_ch_or_path, @iacpj_core_tec,
+        @iacpj_end_dy, @iacpj_reg_dy
       )
     `);
 
     const params = {
-      project_name: req.body.project_name?.trim(),
-      dev_type: req.body.dev_type || null,
-      dev_category: req.body.dev_category || null,
-      verification_lv: req.body.verification_lv || null,
-      preceding_type: req.body.preceding_type || null,
-      target_device: req.body.target_device || null,
-      first_target_tech: req.body.first_target_tech || null,
-      second_target_tech: req.body.second_target_tech || null,
-      htrs_link: req.body.htrs_link || null,
-      htrs_color: req.body.htrs_color || null,
-      nudd: req.body.nudd || null,
-      module: req.body.module || null,
-      project_code: req.body.project_code || null,
-      start_date: req.body.start_date || null,
-      pm: req.body.pm || null,
-      project_grade: req.body.project_grade || null,
+      iacpj_nm: req.body.iacpj_nm?.trim(),
+      iacpj_tgt_n: req.body.iacpj_tgt_n || null,
+      iacpj_level: req.body.iacpj_level || null,
+      iacpj_tech_n: req.body.iacpj_tech_n || null,
+      ia_tgt_htr_n: req.body.ia_tgt_htr_n || null,
+      iacpj_nud_n: req.body.iacpj_nud_n || null,
+      iacpj_mod_n: req.body.iacpj_mod_n || null,
+      iacpj_itf_uno: req.body.iacpj_itf_uno || null,
+      iacpj_bgn_dy: req.body.iacpj_bgn_dy || null,
+      iacpj_ch_n: req.body.iacpj_ch_n || null,
+      ia_ta_grd_n: req.body.ia_ta_grd_n || null,
       project_purpose: req.body.project_purpose || null,
-      project_goal: req.body.project_goal || null,
-      current_status: req.body.current_status || null,
+      iacpj_ta_goa: req.body.iacpj_ta_goa || null,
+      iacpj_cur_stt: req.body.iacpj_cur_stt || null,
+      iacpj_ch_i: req.body.iacpj_ch_i || null,
+      ia_ch_or_i: req.body.ia_ch_or_i || null,
+      ia_ch_or_n: req.body.ia_ch_or_n || null,
+      ia_ch_or_path: req.body.ia_ch_or_path || null,
+      iacpj_core_tec: req.body.iacpj_core_tec || null,
+      iacpj_end_dy: req.body.iacpj_end_dy || null,
+      iacpj_reg_dy: req.body.iacpj_reg_dy || null,
     };
 
     const result = stmt.run(params);
@@ -92,7 +96,7 @@ router.delete("/:id", (req, res) => {
     try {
       const experiments = db
         .prepare("SELECT plan_id FROM experiments WHERE project_name = ?")
-        .all(project.project_name);
+        .all(project.iacpj_nm);
       for (const exp of experiments) {
         db.prepare("DELETE FROM split_tables WHERE plan_id = ?").run(
           exp.plan_id,
@@ -100,7 +104,7 @@ router.delete("/:id", (req, res) => {
       }
       const expResult = db
         .prepare("DELETE FROM experiments WHERE project_name = ?")
-        .run(project.project_name);
+        .run(project.iacpj_nm);
       db.prepare("DELETE FROM projects WHERE id = ?").run(req.params.id);
       counts = { experiments: expResult.changes, splits: experiments.length };
       db.exec("COMMIT");
@@ -110,7 +114,7 @@ router.delete("/:id", (req, res) => {
     }
     res.json({
       message: "과제 삭제 완료",
-      deleted: { project: project.project_name, ...counts },
+      deleted: { project: project.iacpj_nm, ...counts },
     });
   } catch (err) {
     console.error("Error deleting project:", err);

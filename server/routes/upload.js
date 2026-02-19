@@ -16,15 +16,17 @@ const upload = multer({ dest: uploadDir });
 // Prepare statements once
 const insertProject = db.prepare(`
   INSERT OR IGNORE INTO projects (
-    project_name, dev_type, dev_category, verification_lv,
-    preceding_type, target_device, first_target_tech, second_target_tech,
-    htrs_link, htrs_color, nudd, module, project_code, start_date,
-    pm, project_grade, project_purpose, project_goal, current_status
+    iacpj_nm, iacpj_tgt_n, iacpj_level, iacpj_tech_n,
+    ia_tgt_htr_n, iacpj_nud_n, iacpj_mod_n, iacpj_itf_uno, iacpj_bgn_dy,
+    iacpj_ch_n, ia_ta_grd_n, project_purpose, iacpj_ta_goa, iacpj_cur_stt,
+    iacpj_ch_i, ia_ch_or_i, ia_ch_or_n, ia_ch_or_path, iacpj_core_tec,
+    iacpj_end_dy, iacpj_reg_dy
   ) VALUES (
-    @project_name, @dev_type, @dev_category, @verification_lv,
-    @preceding_type, @target_device, @first_target_tech, @second_target_tech,
-    @htrs_link, @htrs_color, @nudd, @module, @project_code, @start_date,
-    @pm, @project_grade, @project_purpose, @project_goal, @current_status
+    @iacpj_nm, @iacpj_tgt_n, @iacpj_level, @iacpj_tech_n,
+    @ia_tgt_htr_n, @iacpj_nud_n, @iacpj_mod_n, @iacpj_itf_uno, @iacpj_bgn_dy,
+    @iacpj_ch_n, @ia_ta_grd_n, @project_purpose, @iacpj_ta_goa, @iacpj_cur_stt,
+    @iacpj_ch_i, @ia_ch_or_i, @ia_ch_or_n, @ia_ch_or_path, @iacpj_core_tec,
+    @iacpj_end_dy, @iacpj_reg_dy
   )
 `);
 
@@ -85,7 +87,7 @@ router.post("/", upload.single("file"), (req, res) => {
         try {
           for (const row of results) {
             if (type === "project") {
-              if (!row.project_name) continue;
+              if (!row.iacpj_nm) continue;
               const res = insertProject.run(row);
               if (res.changes > 0) projectCount++;
             } else if (type === "experiment") {
@@ -99,7 +101,7 @@ router.post("/", upload.single("file"), (req, res) => {
             }
             // 'all' case
             else if (type === "all") {
-              if (row.project_name) {
+              if (row.iacpj_nm) {
                 if (insertProject.run(row).changes > 0) projectCount++;
               }
               if (row.plan_id && row.project_name) {

@@ -6,28 +6,36 @@ db.exec("PRAGMA journal_mode = WAL");
 db.exec("PRAGMA foreign_keys = ON");
 
 function initDB() {
+  // 스키마 초기화 (기존 테이블 제거 후 재생성)
+  db.exec("DROP TABLE IF EXISTS split_tables");
+  db.exec("DROP TABLE IF EXISTS experiments");
+  db.exec("DROP TABLE IF EXISTS projects");
+  db.exec("DROP TABLE IF EXISTS line_lots");
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      dev_type TEXT,
-      dev_category TEXT,
-      verification_lv TEXT,
-      preceding_type TEXT,
-      target_device TEXT,
-      first_target_tech TEXT,
-      second_target_tech TEXT,
-      htrs_link TEXT,
-      htrs_color TEXT,
-      nudd TEXT,
-      module TEXT,
-      project_name TEXT UNIQUE NOT NULL,
-      project_code TEXT,
-      start_date TEXT,
-      pm TEXT,
-      project_grade TEXT,
+      iacpj_nm TEXT UNIQUE NOT NULL,
+      iacpj_tgt_n TEXT,
+      iacpj_level TEXT,
+      iacpj_tech_n TEXT,
+      ia_tgt_htr_n TEXT,
+      iacpj_nud_n TEXT,
+      iacpj_mod_n TEXT,
+      iacpj_itf_uno TEXT,
+      iacpj_bgn_dy TEXT,
+      iacpj_ch_n TEXT,
+      ia_ta_grd_n TEXT,
       project_purpose TEXT,
-      project_goal TEXT,
-      current_status TEXT
+      iacpj_ta_goa TEXT,
+      iacpj_cur_stt TEXT,
+      iacpj_ch_i TEXT,
+      ia_ch_or_i TEXT,
+      ia_ch_or_n TEXT,
+      ia_ch_or_path TEXT,
+      iacpj_core_tec TEXT,
+      iacpj_end_dy TEXT,
+      iacpj_reg_dy TEXT
     );
 
     CREATE TABLE IF NOT EXISTS experiments (
@@ -51,7 +59,8 @@ function initDB() {
       status TEXT DEFAULT 'Assign 전',
       split_completed INTEGER DEFAULT 0,
       summary_completed INTEGER DEFAULT 0,
-      FOREIGN KEY (project_name) REFERENCES projects(project_name)
+      fab_status TEXT,
+      FOREIGN KEY (project_name) REFERENCES projects(iacpj_nm)
     );
 
     CREATE TABLE IF NOT EXISTS line_lots (
@@ -95,63 +104,6 @@ function initDB() {
     CREATE INDEX IF NOT EXISTS idx_experiments_plan ON experiments(plan_id);
     CREATE INDEX IF NOT EXISTS idx_splits_plan ON split_tables(plan_id);
   `);
-
-  // 기존 테이블에 새 컬럼 추가 (이미 있으면 무시)
-  const migrations = [
-    "ALTER TABLE experiments ADD COLUMN status TEXT DEFAULT 'Assign 전'",
-    "ALTER TABLE experiments ADD COLUMN split_completed INTEGER DEFAULT 0",
-    "ALTER TABLE experiments ADD COLUMN summary_completed INTEGER DEFAULT 0",
-    "ALTER TABLE experiments ADD COLUMN fab_status TEXT",
-  ];
-  for (const sql of migrations) {
-    try {
-      db.exec(sql);
-    } catch (_) {
-      // 컬럼이 이미 존재하면 무시
-    }
-  }
-
-  // plan_id NOT NULL → NULL 허용 마이그레이션 (SQLite는 ALTER로 제약 변경 불가 → 테이블 재생성)
-  try {
-    const info = db.prepare("PRAGMA table_info(experiments)").all();
-    const planIdCol = info.find((c) => c.name === "plan_id");
-    if (planIdCol && planIdCol.notnull === 1) {
-      db.exec(`
-        CREATE TABLE experiments_new (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          team TEXT,
-          requester TEXT,
-          lot_code TEXT,
-          project_name TEXT NOT NULL,
-          module TEXT,
-          wf_direction TEXT,
-          eval_process TEXT,
-          prev_eval TEXT,
-          cross_experiment TEXT,
-          eval_category TEXT,
-          eval_item TEXT,
-          lot_request TEXT,
-          reference TEXT,
-          volume_split TEXT,
-          plan_id TEXT,
-          assign_wf TEXT,
-          status TEXT DEFAULT 'Assign 전',
-          split_completed INTEGER DEFAULT 0,
-          summary_completed INTEGER DEFAULT 0,
-          fab_status TEXT,
-          FOREIGN KEY (project_name) REFERENCES projects(project_name)
-        );
-        INSERT INTO experiments_new SELECT * FROM experiments;
-        DROP TABLE experiments;
-        ALTER TABLE experiments_new RENAME TO experiments;
-        CREATE INDEX IF NOT EXISTS idx_experiments_project ON experiments(project_name);
-        CREATE INDEX IF NOT EXISTS idx_experiments_plan ON experiments(plan_id);
-      `);
-      console.log("Migration: plan_id NOT NULL → NULL 허용 완료");
-    }
-  } catch (err) {
-    console.error("plan_id migration error:", err.message);
-  }
 }
 
 /**
