@@ -185,7 +185,9 @@ const insert = db.prepare(`
   )
 `);
 
-const run = db.transaction(() => {
+function run() {
+  db.exec("BEGIN");
+  try {
   // 1) 기존 데이터 전부 삭제
   db.prepare("DELETE FROM split_tables").run();
   console.log("🗑️  기존 split_tables 데이터 삭제 완료");
@@ -264,8 +266,13 @@ const run = db.transaction(() => {
       totalInserted += 2;
     }
   }
+  db.exec("COMMIT");
   return totalInserted;
-});
+  } catch (err) {
+    db.exec("ROLLBACK");
+    throw err;
+  }
+}
 
 const count = run();
 console.log(
