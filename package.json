@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "NODE_OPTIONS='--experimental-sqlite' nodemon server/index.js",
+    "server": "nodemon server/index.js",
     "client": "cd client && npm run dev"
   },
   "dependencies": {
