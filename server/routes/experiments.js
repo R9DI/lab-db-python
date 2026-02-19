@@ -108,9 +108,10 @@ router.post("/:planId/splits", (req, res) => {
       )
     `);
 
-    const transaction = db.transaction((rows) => {
-      let count = 0;
-      for (const row of rows) {
+    let count = 0;
+    db.exec("BEGIN");
+    try {
+      for (const row of splits) {
         const params = {
           plan_id: planId,
           fac_id: row.fac_id || null,
@@ -140,10 +141,11 @@ router.post("/:planId/splits", (req, res) => {
         stmt.run(params);
         count++;
       }
-      return count;
-    });
-
-    const count = transaction(splits);
+      db.exec("COMMIT");
+    } catch (txErr) {
+      db.exec("ROLLBACK");
+      throw txErr;
+    }
     res
       .status(201)
       .json({ message: `${count}건의 스플릿이 저장되었습니다.`, count });

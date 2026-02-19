@@ -15,6 +15,11 @@ function ProjectCard({ project, selected, onClick, onDelete }) {
     }
   };
 
+  const htrsBadgeClass =
+    p.htrs_color === "Red"
+      ? "bg-red-100 text-red-700"
+      : "bg-gray-100 text-gray-600";
+
   return (
     <div
       onClick={onClick}
@@ -24,26 +29,18 @@ function ProjectCard({ project, selected, onClick, onDelete }) {
           : "border-gray-200 bg-white hover:border-indigo-300 hover:shadow-sm"
       }`}
     >
-      <div className="flex items-start justify-between mb-2">
+      {/* 상단: 제목(좌) + PM(우) */}
+      <div className="flex items-baseline justify-between mb-2 gap-2">
         <h3 className="font-semibold text-gray-900 text-sm leading-tight flex-1">
-          {p.project_name}
+          {p.project_name}{" "}
+          <span className="font-normal text-gray-400">{p.project_code}</span>
         </h3>
-        <div className="flex gap-1 shrink-0 ml-2 items-center">
-          <span
-            className={`px-2 py-0.5 text-xs rounded-full ${
-              p.htrs_color === "Red"
-                ? "bg-red-100 text-red-700"
-                : "bg-gray-100 text-gray-600"
-            }`}
-          >
-            {p.htrs_color}
-          </span>
-          <span className="px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-700">
-            {p.nudd}
-          </span>
+
+        <div className="flex items-baseline gap-2 shrink-0">
+          <h3 className="text-sm font-semibold text-gray-800">{p.pm}</h3>
           <button
             onClick={handleDelete}
-            className="ml-1 w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all text-xs"
+            className="w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all text-xs"
             title="과제 삭제"
           >
             ✕
@@ -51,16 +48,18 @@ function ProjectCard({ project, selected, onClick, onDelete }) {
         </div>
       </div>
 
+      {/* 속성: PM/선행 제거 + HTRS/NUDD 추가 */}
       <div className="grid grid-cols-3 gap-1 text-xs text-gray-500 mb-2">
         <span>
-          모듈: <b className="text-gray-700">{p.module}</b>
-        </span>
-        <span>
-          PM: <b className="text-gray-700">{p.pm}</b>
+          Device: <b className="text-gray-700">{p.target_device}</b>
         </span>
         <span>
           Tech: <b className="text-gray-700">{p.first_target_tech}</b>
         </span>
+        <span>
+          Module: <b className="text-gray-700">{p.module}</b>
+        </span>
+
         <span>
           등급: <b className="text-gray-700">{p.project_grade}</b>
         </span>
@@ -70,14 +69,21 @@ function ProjectCard({ project, selected, onClick, onDelete }) {
         <span>
           시작일: <b className="text-gray-700">{p.start_date}</b>
         </span>
-        <span>
-          코드: <b className="text-gray-700">{p.project_code}</b>
+
+        {/* HTRS 색상 */}
+        <span className="flex items-center gap-1">
+          HTRS:
+          <b className={`px-2 py-0.5 rounded-full ${htrsBadgeClass}`}>
+            {p.htrs_color}
+          </b>
         </span>
-        <span>
-          Device: <b className="text-gray-700">{p.target_device}</b>
-        </span>
-        <span>
-          선행: <b className="text-gray-700">{p.preceding_type}</b>
+
+        {/* NUDD */}
+        <span className="flex items-center gap-1">
+          NUDD:
+          <b className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+            {p.nudd}
+          </b>
         </span>
       </div>
 
