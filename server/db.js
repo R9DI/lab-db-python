@@ -58,6 +58,7 @@ function initDB() {
       assign_wf TEXT,
       refdata TEXT,
       refdata_url TEXT,
+      request_date TEXT,
       status TEXT DEFAULT 'Assign 전',
       split_completed INTEGER DEFAULT 0,
       summary_completed INTEGER DEFAULT 0,

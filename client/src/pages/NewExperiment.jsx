@@ -36,6 +36,7 @@ const emptyExperiment = {
   reference: "",
   volume_split: "",
   assign_wf: "",
+  request_date: "",
 };
 
 const emptySplit = {
@@ -91,6 +92,7 @@ const experimentFields = [
   { key: "reference", label: "참고" },
   { key: "volume_split", label: "Volume Split" },
   { key: "assign_wf", label: "배정 WF" },
+  { key: "request_date", label: "요청일" },
 ];
 
 function NewExperiment() {

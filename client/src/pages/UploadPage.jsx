@@ -60,6 +60,7 @@ const SECTIONS = [
       { name: "assign_wf", label: "배정 WF", required: false, format: "숫자", example: "9" },
       { name: "refdata", label: "참조 데이터", required: false, format: "자유 텍스트", example: "" },
       { name: "refdata_url", label: "참조 URL", required: false, format: "URL", example: "" },
+      { name: "request_date", label: "요청일", required: false, format: "날짜 텍스트", example: "2025-01-15" },
     ],
   },
   {

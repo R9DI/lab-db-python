@@ -36,11 +36,11 @@ router.post("/", (req, res) => {
       INSERT INTO experiments (
         plan_id, iacpj_nm, team, requester, lot_code, module,
         wf_direction, eval_process, prev_eval, cross_experiment,
-        eval_category, eval_item, lot_request, reference, volume_split, assign_wf
+        eval_category, eval_item, lot_request, reference, volume_split, assign_wf, request_date
       ) VALUES (
         @plan_id, @iacpj_nm, @team, @requester, @lot_code, @module,
         @wf_direction, @eval_process, @prev_eval, @cross_experiment,
-        @eval_category, @eval_item, @lot_request, @reference, @volume_split, @assign_wf
+        @eval_category, @eval_item, @lot_request, @reference, @volume_split, @assign_wf, @request_date
       )
     `);
 
@@ -61,6 +61,7 @@ router.post("/", (req, res) => {
       reference: req.body.reference || null,
       volume_split: req.body.volume_split || null,
       assign_wf: req.body.assign_wf || null,
+      request_date: req.body.request_date || null,
     };
 
     const result = stmt.run(params);

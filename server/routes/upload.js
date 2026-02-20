@@ -35,12 +35,12 @@ const insertExperiment = db.prepare(`
     plan_id, iacpj_nm, team, requester, lot_code, module,
     wf_direction, eval_process, prev_eval, cross_experiment,
     eval_category, eval_item, lot_request, reference, volume_split, assign_wf,
-    refdata, refdata_url
+    refdata, refdata_url, request_date
   ) VALUES (
     @plan_id, @iacpj_nm, @team, @requester, @lot_code, @module,
     @wf_direction, @eval_process, @prev_eval, @cross_experiment,
     @eval_category, @eval_item, @lot_request, @reference, @volume_split, @assign_wf,
-    @refdata, @refdata_url
+    @refdata, @refdata_url, @request_date
   )
 `);
 
