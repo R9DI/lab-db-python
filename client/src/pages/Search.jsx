@@ -10,20 +10,29 @@ function Search() {
     {
       type: "assistant",
       text: "안녕하세요! 실험 검색 도우미입니다.\n원하는 실험을 자연어로 검색해보세요. 키워드, 모듈명, 공정명, 과제 목표 등 무엇이든 입력할 수 있습니다.",
-      suggestions: [
-        { keyword: "Cryo ESL", context: "시작 추천" },
-        { keyword: "Hybrid Bonding", context: "시작 추천" },
-        { keyword: "Low Thermal", context: "시작 추천" },
-        { keyword: "HKMG Scaling", context: "시작 추천" },
-        { keyword: "Dishing", context: "시작 추천" },
-        { keyword: "Junction", context: "시작 추천" },
-      ],
+      suggestions: [],
     },
   ]);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    axios.get("/api/experiments").then((res) => {
+      const exps = res.data;
+      if (exps.length === 0) return;
+      const shuffled = [...exps].sort(() => Math.random() - 0.5).slice(0, 6);
+      const suggestions = shuffled.map((e) => ({
+        keyword: e.eval_process || e.eval_item || e.iacpj_nm,
+        context: "시작 추천",
+      })).filter((s) => s.keyword);
+      setMessages((prev) => {
+        const first = { ...prev[0], suggestions };
+        return [first, ...prev.slice(1)];
+      });
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
