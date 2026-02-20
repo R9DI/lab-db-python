@@ -6,6 +6,16 @@ import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
+const SPLIT_COLORS = {
+  base: { row: "#EFF6FF", cell: "#DBEAFE", text: "#1E40AF" },
+  s1:   { row: "#FFFBEB", cell: "#FEF3C7", text: "#92400E" },
+  s2:   { row: "#F0FDF4", cell: "#D1FAE5", text: "#065F46" },
+  s3:   { row: "#F5F3FF", cell: "#EDE9FE", text: "#5B21B6" },
+  s4:   { row: "#FFF1F2", cell: "#FFE4E6", text: "#9F1239" },
+};
+const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
+const getSplitColor = (val) => SPLIT_COLORS[val] || DEFAULT_SPLIT;
+
 /* ─── 기본 빈 양식 ─── */
 const emptyProject = {
   iacpj_nm: "",
@@ -232,7 +242,7 @@ function NewExperiment() {
               ? "클릭하여 해제"
               : "클릭하여 배정"
         }
-        className={`w-6 h-6 rounded text-[10px] font-bold border transition ${
+        className={`w-6 h-6 rounded text-base font-bold border transition flex items-center justify-center ${
           isOn
             ? "bg-amber-400 text-white border-amber-500"
             : isBlocked
@@ -240,7 +250,7 @@ function NewExperiment() {
               : "bg-white text-gray-300 border-gray-200 hover:border-amber-300"
         }`}
       >
-        {isOn ? "O" : isBlocked ? "—" : ""}
+        {isOn ? "⬤" : isBlocked ? "—" : ""}
       </button>
     );
   }, []);
@@ -255,24 +265,15 @@ function NewExperiment() {
         field: "eps_lot_gbn_cd",
         width: 80,
         cellStyle: (params) => {
-          if (params.value === "base")
-            return {
-              backgroundColor: "#DBEAFE",
-              color: "#1E40AF",
-              fontWeight: "600",
-            };
-          return {
-            backgroundColor: "#FEF3C7",
-            color: "#92400E",
-            fontWeight: "600",
-          };
+          const c = getSplitColor(params.value);
+          return { backgroundColor: c.cell, color: c.text, fontWeight: "600" };
         },
       },
       { headerName: "조건", field: "work_cond_desc", minWidth: 180, flex: 1 },
       { headerName: "장비", field: "eqp_id", width: 90 },
       { headerName: "Recipe", field: "recipe_id", width: 140 },
       ...Array.from({ length: 15 }, (_, i) => ({
-        headerName: `W${i + 1}`,
+        headerName: `${i + 1}`,
         field: `user_def_val_${i + 1}`,
         width: 48,
         editable: false,
@@ -305,9 +306,13 @@ function NewExperiment() {
   }, []);
 
   const getSplitRowStyle = useCallback((params) => {
-    if (params.data.eps_lot_gbn_cd === "base")
-      return { backgroundColor: "#EFF6FF" };
-    return { backgroundColor: "#FFFBEB" };
+    const prev = params.api.getDisplayedRowAtIndex(params.rowIndex - 1);
+    const borderTop =
+      prev && prev.data.oper_id !== params.data.oper_id
+        ? "2px solid #64748B"
+        : undefined;
+    const c = getSplitColor(params.data.eps_lot_gbn_cd);
+    return { backgroundColor: c.row, borderTop };
   }, []);
 
   const handleGridAddRow = () => {
