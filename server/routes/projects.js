@@ -14,7 +14,7 @@ router.get("/:id", (req, res) => {
   if (!project) return res.status(404).json({ error: "Project not found" });
 
   const experiments = db
-    .prepare("SELECT * FROM experiments WHERE project_name = ?")
+    .prepare("SELECT * FROM experiments WHERE iacpj_nm = ?")
     .all(project.iacpj_nm);
   res.json({ ...project, experiments });
 });
@@ -95,7 +95,7 @@ router.delete("/:id", (req, res) => {
     db.exec("BEGIN");
     try {
       const experiments = db
-        .prepare("SELECT plan_id FROM experiments WHERE project_name = ?")
+        .prepare("SELECT plan_id FROM experiments WHERE iacpj_nm = ?")
         .all(project.iacpj_nm);
       for (const exp of experiments) {
         db.prepare("DELETE FROM split_tables WHERE plan_id = ?").run(
@@ -103,7 +103,7 @@ router.delete("/:id", (req, res) => {
         );
       }
       const expResult = db
-        .prepare("DELETE FROM experiments WHERE project_name = ?")
+        .prepare("DELETE FROM experiments WHERE iacpj_nm = ?")
         .run(project.iacpj_nm);
       db.prepare("DELETE FROM projects WHERE id = ?").run(req.params.id);
       counts = { experiments: expResult.changes, splits: experiments.length };

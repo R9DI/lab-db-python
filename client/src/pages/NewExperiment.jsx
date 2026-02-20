@@ -21,7 +21,7 @@ const emptyProject = {
 };
 
 const emptyExperiment = {
-  project_name: "",
+  iacpj_nm: "",
   team: "",
   requester: "",
   lot_code: "",
@@ -79,7 +79,7 @@ const projectFields = [
 
 const experimentFields = [
   { key: "eval_item", label: "평가 항목 *" },
-  { key: "project_name", label: "과제명 *" },
+  { key: "iacpj_nm", label: "과제명 *" },
   { key: "team", label: "팀" },
   { key: "requester", label: "요청자" },
   { key: "lot_code", label: "LOT 코드" },
@@ -123,7 +123,7 @@ function NewExperiment() {
       setSourceInfo({
         plan_id: srcExp.plan_id,
         eval_item: srcExp.eval_item,
-        project_name: srcExp.project_name,
+        iacpj_nm: srcExp.iacpj_nm,
       });
 
       // Pre-fill project — user will probably reuse same project
@@ -333,7 +333,7 @@ function NewExperiment() {
       alert("평가 항목을 입력해주세요.");
       return;
     }
-    if (!experiment.project_name.trim()) {
+    if (!experiment.iacpj_nm.trim()) {
       alert("과제명을 입력해주세요.");
       return;
     }
@@ -347,7 +347,7 @@ function NewExperiment() {
       // 실험 조건의 과제명으로 과제 정보도 동기화
       const syncedProject = {
         ...project,
-        iacpj_nm: experiment.project_name,
+        iacpj_nm: experiment.iacpj_nm,
       };
 
       // 1. 과제 저장 (이미 있으면 무시됨)
@@ -446,7 +446,7 @@ function NewExperiment() {
             </p>
             <p className="text-emerald-700 mt-0.5">
               <b>{sourceInfo.eval_item}</b> ({sourceInfo.plan_id}) —{" "}
-              {sourceInfo.project_name}
+              {sourceInfo.iacpj_nm}
             </p>
             <p className="text-emerald-600 text-xs mt-1">
               이 초안은 위 실험에서 가져왔습니다. 필요한 항목을 수정한 후

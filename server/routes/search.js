@@ -17,7 +17,7 @@ function ensureIndex() {
       p.ia_tgt_htr_n, p.iacpj_nud_n,
       p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n
     FROM experiments e
-    LEFT JOIN projects p ON e.project_name = p.iacpj_nm
+    LEFT JOIN projects p ON e.iacpj_nm = p.iacpj_nm
   `,
     )
     .all();
@@ -66,7 +66,7 @@ function extractSuggestions(results, originalQuery) {
       { field: "평가아이템", text: exp.eval_item },
       { field: "모듈", text: exp.module },
       { field: "평가공정", text: exp.eval_process },
-      { field: "과제", text: exp.project_name },
+      { field: "과제", text: exp.iacpj_nm },
       { field: "Plan ID", text: exp.plan_id },
       { field: "LOT", text: exp.lot_code },
       { field: "요청자", text: exp.requester },
@@ -184,7 +184,7 @@ function generateSummary(results, query) {
   // 과제별로 그룹핑
   const projectGroups = {};
   for (const r of results) {
-    const pName = r.project?.iacpj_nm || r.experiment?.project_name;
+    const pName = r.project?.iacpj_nm || r.experiment?.iacpj_nm;
     if (!projectGroups[pName]) {
       projectGroups[pName] = {
         project: r.project,
@@ -229,7 +229,7 @@ router.post("/", (req, res) => {
       .all(r.document.plan_id);
     const project = db
       .prepare("SELECT * FROM projects WHERE iacpj_nm = ?")
-      .get(r.document.project_name);
+      .get(r.document.iacpj_nm);
     return {
       score: Math.round(r.score * 1000) / 1000,
       experiment: r.document,

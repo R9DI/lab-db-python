@@ -37,13 +37,12 @@ const TABLES = [
     icon: "📁",
     fields: [
       { name: "id", type: "PK", pk: true },
-      { name: "project_name", type: "TEXT", unique: true, highlight: true },
-      { name: "module", type: "TEXT" },
-      { name: "pm", type: "TEXT" },
-      { name: "project_code", type: "TEXT" },
-      { name: "dev_type", type: "TEXT" },
+      { name: "iacpj_nm", type: "TEXT", unique: true, highlight: true },
+      { name: "iacpj_mod_n", type: "TEXT" },
+      { name: "iacpj_ch_n", type: "TEXT" },
+      { name: "iacpj_tech_n", type: "TEXT" },
       { name: "project_purpose", type: "TEXT" },
-      { name: "...", type: "", note: "외 13개 필드" },
+      { name: "...", type: "", note: "외 16개 필드" },
     ],
   },
   {
@@ -54,7 +53,7 @@ const TABLES = [
     fields: [
       { name: "id", type: "PK", pk: true },
       {
-        name: "project_name",
+        name: "iacpj_nm",
         type: "FK → Projects",
         fk: true,
         highlight: true,
@@ -99,7 +98,7 @@ const RELATIONS = [
     to: "experiments",
     label: "1 : N",
     desc: "하나의 과제에\n여러 실험 소속",
-    viaField: "project_name",
+    viaField: "iacpj_nm",
   },
   {
     from: "experiments",

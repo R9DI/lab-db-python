@@ -4,7 +4,7 @@ const { invalidateIndex } = require("./search");
 const router = express.Router();
 
 router.get("/", (req, res) => {
-  const { project_name } = req.query;
+  const { iacpj_nm } = req.query;
   const query = `
     SELECT e.*, COALESCE(s.split_count, 0) AS split_count
     FROM experiments e
@@ -14,10 +14,10 @@ router.get("/", (req, res) => {
       GROUP BY plan_id
     ) s ON e.plan_id = s.plan_id
   `;
-  if (project_name) {
+  if (iacpj_nm) {
     const experiments = db
-      .prepare(query + " WHERE e.project_name = ?")
-      .all(project_name);
+      .prepare(query + " WHERE e.iacpj_nm = ?")
+      .all(iacpj_nm);
     return res.json(experiments);
   }
   const experiments = db.prepare(query).all();
@@ -26,19 +26,19 @@ router.get("/", (req, res) => {
 
 // 실험 추가 (JSON 직접)
 router.post("/", (req, res) => {
-  const { project_name } = req.body;
-  if (!project_name || !project_name.trim()) {
-    return res.status(400).json({ error: "project_name은 필수입니다." });
+  const { iacpj_nm } = req.body;
+  if (!iacpj_nm || !iacpj_nm.trim()) {
+    return res.status(400).json({ error: "iacpj_nm은 필수입니다." });
   }
 
   try {
     const stmt = db.prepare(`
       INSERT INTO experiments (
-        plan_id, project_name, team, requester, lot_code, module,
+        plan_id, iacpj_nm, team, requester, lot_code, module,
         wf_direction, eval_process, prev_eval, cross_experiment,
         eval_category, eval_item, lot_request, reference, volume_split, assign_wf
       ) VALUES (
-        @plan_id, @project_name, @team, @requester, @lot_code, @module,
+        @plan_id, @iacpj_nm, @team, @requester, @lot_code, @module,
         @wf_direction, @eval_process, @prev_eval, @cross_experiment,
         @eval_category, @eval_item, @lot_request, @reference, @volume_split, @assign_wf
       )
@@ -46,7 +46,7 @@ router.post("/", (req, res) => {
 
     const params = {
       plan_id: req.body.plan_id?.trim() || null,
-      project_name: req.body.project_name?.trim(),
+      iacpj_nm: req.body.iacpj_nm?.trim(),
       team: req.body.team || null,
       requester: req.body.requester || null,
       lot_code: req.body.lot_code || null,
@@ -73,7 +73,7 @@ router.post("/", (req, res) => {
     console.error("Error creating experiment:", err);
     if (err.message.includes("FOREIGN KEY")) {
       return res.status(400).json({
-        error: `과제 '${project_name}'이(가) 존재하지 않습니다. 과제를 먼저 등록해주세요.`,
+        error: `과제 '${iacpj_nm}'이(가) 존재하지 않습니다. 과제를 먼저 등록해주세요.`,
       });
     }
     res
@@ -305,8 +305,8 @@ router.get("/:id", (req, res) => {
     .prepare("SELECT * FROM split_tables WHERE plan_id = ?")
     .all(experiment.plan_id);
   const project = db
-    .prepare("SELECT * FROM projects WHERE project_name = ?")
-    .get(experiment.project_name);
+    .prepare("SELECT * FROM projects WHERE iacpj_nm = ?")
+    .get(experiment.iacpj_nm);
   res.json({ ...experiment, splits, project });
 });
 

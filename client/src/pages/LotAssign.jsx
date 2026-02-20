@@ -228,7 +228,7 @@ function LotAssign() {
       setAssignModal({
         experimentId: experimentData.id,
         evalItem: experimentData.eval_item || "미입력",
-        projectName: experimentData.project_name,
+        projectName: experimentData.iacpj_nm,
         targetStep,
       });
     } catch (err) {
@@ -533,7 +533,7 @@ function LotAssign() {
       },
       {
         headerName: "과제명",
-        field: "project_name",
+        field: "iacpj_nm",
         minWidth: 160,
         flex: 2,
       },
@@ -582,7 +582,7 @@ function LotAssign() {
       },
       {
         headerName: "과제명",
-        field: "project_name",
+        field: "iacpj_nm",
         minWidth: 160,
         flex: 2,
       },

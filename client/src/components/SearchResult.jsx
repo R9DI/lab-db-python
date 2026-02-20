@@ -15,7 +15,7 @@ function SearchResult({ result, rank }) {
         </span>
         <div className="flex-1 min-w-0">
           <h4 className="font-semibold text-gray-900 text-sm truncate">{experiment.eval_item}</h4>
-          <p className="text-xs text-gray-500 truncate">{experiment.project_name}</p>
+          <p className="text-xs text-gray-500 truncate">{experiment.iacpj_nm}</p>
         </div>
         <span className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded-full shrink-0">
           유사도 {(score * 100).toFixed(1)}%

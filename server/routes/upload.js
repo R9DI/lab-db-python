@@ -32,13 +32,15 @@ const insertProject = db.prepare(`
 
 const insertExperiment = db.prepare(`
   INSERT INTO experiments (
-    plan_id, project_name, team, requester, lot_code, module,
+    plan_id, iacpj_nm, team, requester, lot_code, module,
     wf_direction, eval_process, prev_eval, cross_experiment,
-    eval_category, eval_item, lot_request, reference, volume_split, assign_wf
+    eval_category, eval_item, lot_request, reference, volume_split, assign_wf,
+    refdata, refdata_url
   ) VALUES (
-    @plan_id, @project_name, @team, @requester, @lot_code, @module,
+    @plan_id, @iacpj_nm, @team, @requester, @lot_code, @module,
     @wf_direction, @eval_process, @prev_eval, @cross_experiment,
-    @eval_category, @eval_item, @lot_request, @reference, @volume_split, @assign_wf
+    @eval_category, @eval_item, @lot_request, @reference, @volume_split, @assign_wf,
+    @refdata, @refdata_url
   )
 `);
 
@@ -91,7 +93,7 @@ router.post("/", upload.single("file"), (req, res) => {
               const res = insertProject.run(row);
               if (res.changes > 0) projectCount++;
             } else if (type === "experiment") {
-              if (!row.plan_id || !row.project_name) continue;
+              if (!row.plan_id || !row.iacpj_nm) continue;
               const res = insertExperiment.run(row);
               if (res.changes > 0) experimentCount++;
             } else if (type === "split") {
@@ -104,7 +106,7 @@ router.post("/", upload.single("file"), (req, res) => {
               if (row.iacpj_nm) {
                 if (insertProject.run(row).changes > 0) projectCount++;
               }
-              if (row.plan_id && row.project_name) {
+              if (row.plan_id && row.iacpj_nm) {
                 if (insertExperiment.run(row).changes > 0) experimentCount++;
               }
               if (row.plan_id) {

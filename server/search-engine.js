@@ -92,7 +92,7 @@ class TfIdfSearchEngine {
   _docToText(doc) {
     return [
       // 실험 필드
-      doc.project_name,
+      doc.iacpj_nm,
       doc.module,
       doc.eval_item,
       doc.eval_process,

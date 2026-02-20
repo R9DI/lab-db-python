@@ -43,7 +43,7 @@ function initDB() {
       team TEXT,
       requester TEXT,
       lot_code TEXT,
-      project_name TEXT NOT NULL,
+      iacpj_nm TEXT NOT NULL,
       module TEXT,
       wf_direction TEXT,
       eval_process TEXT,
@@ -56,11 +56,13 @@ function initDB() {
       volume_split TEXT,
       plan_id TEXT,
       assign_wf TEXT,
+      refdata TEXT,
+      refdata_url TEXT,
       status TEXT DEFAULT 'Assign 전',
       split_completed INTEGER DEFAULT 0,
       summary_completed INTEGER DEFAULT 0,
       fab_status TEXT,
-      FOREIGN KEY (project_name) REFERENCES projects(iacpj_nm)
+      FOREIGN KEY (iacpj_nm) REFERENCES projects(iacpj_nm)
     );
 
     CREATE TABLE IF NOT EXISTS line_lots (
@@ -100,7 +102,7 @@ function initDB() {
       note TEXT
     );
 
-    CREATE INDEX IF NOT EXISTS idx_experiments_project ON experiments(project_name);
+    CREATE INDEX IF NOT EXISTS idx_experiments_project ON experiments(iacpj_nm);
     CREATE INDEX IF NOT EXISTS idx_experiments_plan ON experiments(plan_id);
     CREATE INDEX IF NOT EXISTS idx_splits_plan ON split_tables(plan_id);
   `);

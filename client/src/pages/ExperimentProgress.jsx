@@ -161,7 +161,7 @@ function ExperimentProgress() {
       return;
     }
     axios
-      .get(`/api/experiments?project_name=${encodeURIComponent(selectedProject.iacpj_nm)}`)
+      .get(`/api/experiments?iacpj_nm=${encodeURIComponent(selectedProject.iacpj_nm)}`)
       .then((res) => setExperiments(res.data))
       .catch((err) => console.error("실험 목록 로드 실패:", err));
     setSelectedExperiment(null);

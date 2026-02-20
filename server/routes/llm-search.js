@@ -51,7 +51,7 @@ function ensureIndex() {
       p.ia_tgt_htr_n, p.iacpj_nud_n,
       p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n
     FROM experiments e
-    LEFT JOIN projects p ON e.project_name = p.iacpj_nm
+    LEFT JOIN projects p ON e.iacpj_nm = p.iacpj_nm
   `,
     )
     .all();
@@ -66,7 +66,7 @@ function experimentToContext(result, idx) {
   const splits = result.splits || [];
 
   let text = `[실험 ${idx + 1}] ${exp.eval_item || "N/A"}
-  - 과제: ${exp.project_name || "N/A"}
+  - 과제: ${exp.iacpj_nm || "N/A"}
   - 모듈: ${exp.module || "N/A"}
   - Plan ID: ${exp.plan_id || "미배정"}
   - 평가공정: ${exp.eval_process || "N/A"}
@@ -210,7 +210,7 @@ router.post("/", async (req, res) => {
       .all(r.document.plan_id);
     const project = db
       .prepare("SELECT * FROM projects WHERE iacpj_nm = ?")
-      .get(r.document.project_name);
+      .get(r.document.iacpj_nm);
     return {
       score: Math.round(r.score * 1000) / 1000,
       experiment: r.document,

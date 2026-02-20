@@ -95,7 +95,7 @@ function Dashboard() {
     setExperimentSearchText("");
     try {
       const res = await axios.get(
-        `/api/experiments?project_name=${encodeURIComponent(project.iacpj_nm)}`,
+        `/api/experiments?iacpj_nm=${encodeURIComponent(project.iacpj_nm)}`,
       );
       setExperiments(res.data);
       setExperimentOptions(

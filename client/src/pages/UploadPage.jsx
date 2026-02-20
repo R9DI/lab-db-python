@@ -40,10 +40,10 @@ const SECTIONS = [
     icon: "🧪",
     color: "emerald",
     step: 2,
-    desc: "실험 계획 정보를 등록합니다. plan_id와 project_name이 필수이며, project_name은 과제 테이블에 먼저 등록되어야 합니다.",
+    desc: "실험 계획 정보를 등록합니다. plan_id와 iacpj_nm이 필수이며, iacpj_nm은 과제 테이블에 먼저 등록되어야 합니다.",
     columns: [
       { name: "plan_id", label: "Plan ID", required: true, format: "텍스트 (고유)", example: "RSAB705" },
-      { name: "project_name", label: "과제명", required: true, format: "텍스트 (과제 테이블에 존재해야 함)", example: "DRAM 3세대 고속 개발" },
+      { name: "iacpj_nm", label: "과제명", required: true, format: "텍스트 (과제 테이블에 존재해야 함)", example: "DRAM 3세대 고속 개발" },
       { name: "team", label: "팀", required: false, format: "텍스트", example: "소자개발팀" },
       { name: "requester", label: "요청자", required: false, format: "텍스트 (이름)", example: "이영희" },
       { name: "lot_code", label: "LOT 코드", required: false, format: "텍스트", example: "LOT-A001" },
@@ -58,6 +58,8 @@ const SECTIONS = [
       { name: "reference", label: "참고", required: false, format: "자유 텍스트", example: "" },
       { name: "volume_split", label: "Volume Split", required: false, format: "텍스트", example: "9WF" },
       { name: "assign_wf", label: "배정 WF", required: false, format: "숫자", example: "9" },
+      { name: "refdata", label: "참조 데이터", required: false, format: "자유 텍스트", example: "" },
+      { name: "refdata_url", label: "참조 URL", required: false, format: "URL", example: "" },
     ],
   },
   {
