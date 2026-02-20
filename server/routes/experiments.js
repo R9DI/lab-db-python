@@ -95,17 +95,23 @@ router.post("/:planId/splits", (req, res) => {
   try {
     const stmt = db.prepare(`
       INSERT INTO split_tables (
-        plan_id, fac_id, oper_id, oper_nm, eps_lot_gbn_cd, work_cond_desc,
+        sno, plan_id, fac_id, oper_id, oper_nm, eps_lot_gbn_cd, work_cond_desc,
         eqp_id, recipe_id, user_def_val_1, user_def_val_2, user_def_val_3,
         user_def_val_4, user_def_val_5, user_def_val_6, user_def_val_7,
         user_def_val_8, user_def_val_9, user_def_val_10, user_def_val_11,
-        user_def_val_12, user_def_val_13, user_def_val_14, user_def_val_15, note
+        user_def_val_12, user_def_val_13, user_def_val_14, user_def_val_15,
+        user_def_val_16, user_def_val_17, user_def_val_18, user_def_val_19,
+        user_def_val_20, user_def_val_21, user_def_val_22, user_def_val_23,
+        user_def_val_24, user_def_val_25, note
       ) VALUES (
-        @plan_id, @fac_id, @oper_id, @oper_nm, @eps_lot_gbn_cd, @work_cond_desc,
+        @sno, @plan_id, @fac_id, @oper_id, @oper_nm, @eps_lot_gbn_cd, @work_cond_desc,
         @eqp_id, @recipe_id, @user_def_val_1, @user_def_val_2, @user_def_val_3,
         @user_def_val_4, @user_def_val_5, @user_def_val_6, @user_def_val_7,
         @user_def_val_8, @user_def_val_9, @user_def_val_10, @user_def_val_11,
-        @user_def_val_12, @user_def_val_13, @user_def_val_14, @user_def_val_15, @note
+        @user_def_val_12, @user_def_val_13, @user_def_val_14, @user_def_val_15,
+        @user_def_val_16, @user_def_val_17, @user_def_val_18, @user_def_val_19,
+        @user_def_val_20, @user_def_val_21, @user_def_val_22, @user_def_val_23,
+        @user_def_val_24, @user_def_val_25, @note
       )
     `);
 
@@ -114,6 +120,7 @@ router.post("/:planId/splits", (req, res) => {
     try {
       for (const row of splits) {
         const params = {
+          sno: row.sno || null,
           plan_id: planId,
           fac_id: row.fac_id || null,
           oper_id: row.oper_id || null,
@@ -137,6 +144,16 @@ router.post("/:planId/splits", (req, res) => {
           user_def_val_13: row.user_def_val_13 || null,
           user_def_val_14: row.user_def_val_14 || null,
           user_def_val_15: row.user_def_val_15 || null,
+          user_def_val_16: row.user_def_val_16 || null,
+          user_def_val_17: row.user_def_val_17 || null,
+          user_def_val_18: row.user_def_val_18 || null,
+          user_def_val_19: row.user_def_val_19 || null,
+          user_def_val_20: row.user_def_val_20 || null,
+          user_def_val_21: row.user_def_val_21 || null,
+          user_def_val_22: row.user_def_val_22 || null,
+          user_def_val_23: row.user_def_val_23 || null,
+          user_def_val_24: row.user_def_val_24 || null,
+          user_def_val_25: row.user_def_val_25 || null,
           note: row.note || null,
         };
         stmt.run(params);

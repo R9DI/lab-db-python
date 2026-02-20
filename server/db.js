@@ -77,6 +77,7 @@ function initDB() {
 
     CREATE TABLE IF NOT EXISTS split_tables (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sno INTEGER,
       fac_id TEXT,
       plan_id TEXT NOT NULL,
       oper_id TEXT,
@@ -100,6 +101,16 @@ function initDB() {
       user_def_val_13 TEXT,
       user_def_val_14 TEXT,
       user_def_val_15 TEXT,
+      user_def_val_16 TEXT,
+      user_def_val_17 TEXT,
+      user_def_val_18 TEXT,
+      user_def_val_19 TEXT,
+      user_def_val_20 TEXT,
+      user_def_val_21 TEXT,
+      user_def_val_22 TEXT,
+      user_def_val_23 TEXT,
+      user_def_val_24 TEXT,
+      user_def_val_25 TEXT,
       note TEXT
     );
 
