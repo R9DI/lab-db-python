@@ -237,7 +237,7 @@ function ConnectionArrow({ relation, index }) {
 }
 
 export default function SchemaOverview() {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [hoveredTable, setHoveredTable] = useState(null);
 
   return (

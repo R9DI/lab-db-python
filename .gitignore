@@ -14,3 +14,4 @@ coverage/
 *.swo
 *.db-wal
 *.db-shm
+*.db
