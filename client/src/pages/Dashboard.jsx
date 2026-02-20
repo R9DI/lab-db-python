@@ -30,6 +30,10 @@ function Dashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newProject, setNewProject] = useState(EMPTY_PROJECT_FORM);
 
+  // 더보기 제한
+  const [projectLimit, setProjectLimit] = useState(4);
+  const [experimentLimit, setExperimentLimit] = useState(4);
+
   // Project search state
   const [projectOptions, setProjectOptions] = useState([]);
   // Experiment search state
@@ -93,6 +97,7 @@ function Dashboard() {
     setSelectedExperiment(null);
     setSplits([]);
     setExperimentSearchText("");
+    setExperimentLimit(4);
     try {
       const res = await axios.get(
         `/api/experiments?iacpj_nm=${encodeURIComponent(project.iacpj_nm)}`,
@@ -226,7 +231,7 @@ function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {projects.map((p) => (
+          {projects.slice(0, projectLimit).map((p) => (
             <ProjectCard
               key={p.id}
               project={p}
@@ -236,6 +241,14 @@ function Dashboard() {
             />
           ))}
         </div>
+        {projects.length > projectLimit && (
+          <button
+            onClick={() => setProjectLimit((prev) => prev + 10)}
+            className="mt-3 w-full py-2 text-sm text-indigo-600 hover:text-indigo-800 border border-indigo-200 hover:border-indigo-400 rounded-lg transition"
+          >
+            10개 더보기 ({projects.length - projectLimit}건 남음)
+          </button>
+        )}
       </section>
 
       {/* 실험 목록 */}
@@ -263,7 +276,7 @@ function Dashboard() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filteredExperiments.map((e) => (
+            {filteredExperiments.slice(0, experimentLimit).map((e) => (
               <ExperimentCard
                 key={e.id}
                 experiment={e}
@@ -272,6 +285,14 @@ function Dashboard() {
               />
             ))}
           </div>
+          {filteredExperiments.length > experimentLimit && (
+            <button
+              onClick={() => setExperimentLimit((prev) => prev + 10)}
+              className="mt-3 w-full py-2 text-sm text-emerald-600 hover:text-emerald-800 border border-emerald-200 hover:border-emerald-400 rounded-lg transition"
+            >
+              10개 더보기 ({filteredExperiments.length - experimentLimit}건 남음)
+            </button>
+          )}
         </section>
       )}
 
