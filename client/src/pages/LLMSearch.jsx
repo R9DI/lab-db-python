@@ -204,7 +204,7 @@ function LLMSearch() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      text: "안녕하세요! LLM 기반 실험 검색 도우미입니다.\n자연어로 질문하면 실험 데이터를 분석하여 답변해드립니다.\n\n예시:\n- \"Hybrid Bonding 관련 실험 현황 알려줘\"\n- \"ESL Etch 조건 비교해줘\"\n- \"Cell 모듈에서 진행 중인 실험은?\"\n- \"dishing 개선 실험의 Split 조건은?\"",
+      text: "안녕하세요! LLM 기반 실험 검색 도우미입니다.\n자연어로 질문하면 실험 데이터를 분석하여 답변해드립니다.",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -220,6 +220,25 @@ function LLMSearch() {
   useEffect(() => {
     if (!loading) inputRef.current?.focus();
   }, [loading]);
+
+  useEffect(() => {
+    axios.get("/api/experiments").then((res) => {
+      const exps = res.data;
+      if (exps.length === 0) return;
+      // 랜덤하게 최대 4개 샘플링
+      const shuffled = [...exps].sort(() => Math.random() - 0.5).slice(0, 4);
+      const examples = shuffled.map((e) => {
+        if (e.eval_process) return `"${e.eval_process}" 공정 실험 현황 알려줘`;
+        if (e.eval_item) return `"${e.eval_item}" 관련 실험 찾아줘`;
+        return `"${e.iacpj_nm}" 과제 실험 현황은?`;
+      });
+      const exampleText = examples.map((ex) => `- ${ex}`).join("\n");
+      setMessages([{
+        role: "assistant",
+        text: `안녕하세요! LLM 기반 실험 검색 도우미입니다.\n자연어로 질문하면 실험 데이터를 분석하여 답변해드립니다.\n\n예시:\n${exampleText}`,
+      }]);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     axios
