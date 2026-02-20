@@ -4,13 +4,21 @@ const router = express.Router();
 
 router.get("/", (req, res) => {
   const projects = db.prepare(`
-    SELECT p.*, COALESCE(e.experiment_count, 0) AS experiment_count
+    SELECT p.*,
+      COALESCE(e.experiment_count, 0) AS experiment_count,
+      COALESCE(s.split_count, 0) AS split_count
     FROM projects p
     LEFT JOIN (
       SELECT iacpj_nm, COUNT(*) AS experiment_count
       FROM experiments
       GROUP BY iacpj_nm
     ) e ON p.iacpj_nm = e.iacpj_nm
+    LEFT JOIN (
+      SELECT ex.iacpj_nm, COUNT(*) AS split_count
+      FROM split_tables st
+      JOIN experiments ex ON st.plan_id = ex.plan_id
+      GROUP BY ex.iacpj_nm
+    ) s ON p.iacpj_nm = s.iacpj_nm
   `).all();
   res.json(projects);
 });

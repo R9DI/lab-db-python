@@ -45,7 +45,12 @@ function Dashboard() {
     axios
       .get("/api/projects")
       .then((res) => {
-        const sorted = [...res.data].sort((a, b) => b.experiment_count - a.experiment_count);
+        const sorted = [...res.data].sort((a, b) => {
+          const aLinked = a.experiment_count > 0 && a.split_count > 0 ? 1 : 0;
+          const bLinked = b.experiment_count > 0 && b.split_count > 0 ? 1 : 0;
+          if (bLinked !== aLinked) return bLinked - aLinked;
+          return b.experiment_count - a.experiment_count;
+        });
         setProjects(sorted);
         setProjectOptions(
           sorted.map((p) => ({
