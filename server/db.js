@@ -6,12 +6,6 @@ db.exec("PRAGMA journal_mode = WAL");
 db.exec("PRAGMA foreign_keys = ON");
 
 function initDB() {
-  // 스키마 초기화 (기존 테이블 제거 후 재생성)
-  db.exec("DROP TABLE IF EXISTS split_tables");
-  db.exec("DROP TABLE IF EXISTS experiments");
-  db.exec("DROP TABLE IF EXISTS projects");
-  db.exec("DROP TABLE IF EXISTS line_lots");
-
   db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
