@@ -58,29 +58,25 @@ function ExperimentCard({ experiment, selected, onClick }) {
       {/* 상세 보기 버튼 */}
       <button
         onClick={(ev) => { ev.stopPropagation(); setExpanded(!expanded); }}
-        className={`text-xs font-semibold px-2.5 py-1 rounded-full transition ${
-          expanded
-            ? "bg-sky-500 text-white"
-            : "bg-sky-100 text-sky-600 hover:bg-sky-500 hover:text-white"
-        }`}
+        className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
       >
-        {expanded ? "▲ 상세 접기" : "▼ 실험 상세 보기"}
+        {expanded ? "상세 접기" : "실험 상세 보기"}
       </button>
 
       {/* 상세 내용 */}
       {expanded && (
         <div
-          className="mt-2 pt-2 border-t grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-gray-500"
+          className="mt-2 pt-2 border-t space-y-1 text-xs"
           onClick={(ev) => ev.stopPropagation()}
         >
           {detailFields.map(({ label, value }) => (
-            <span key={label} className={label === "참고" || label === "이전 평가" || label === "교차 실험" ? "col-span-2" : ""}>
+            <div key={label}>
               <span className="text-gray-400">{label}: </span>
               <b className="text-gray-700">{value}</b>
-            </span>
+            </div>
           ))}
           {e.refdata_url && (
-            <span className="col-span-2">
+            <div>
               <span className="text-gray-400">참조 URL: </span>
               <a
                 href={e.refdata_url}
@@ -91,7 +87,7 @@ function ExperimentCard({ experiment, selected, onClick }) {
               >
                 {e.refdata_url}
               </a>
-            </span>
+            </div>
           )}
         </div>
       )}
