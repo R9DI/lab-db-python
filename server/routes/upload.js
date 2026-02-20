@@ -249,17 +249,17 @@ router.get("/stats", (req, res) => {
 // ─── DB 전체 초기화 ───
 router.delete("/clear", (req, res) => {
   try {
-    db.exec("BEGIN");
-    db.exec("DELETE FROM split_tables");
-    db.exec("DELETE FROM experiments");
-    db.exec("DELETE FROM projects");
-    db.exec("DELETE FROM line_lots");
-    db.exec("COMMIT");
+    const clearAll = db.transaction(() => {
+      db.prepare("DELETE FROM split_tables").run();
+      db.prepare("DELETE FROM experiments").run();
+      db.prepare("DELETE FROM projects").run();
+      db.prepare("DELETE FROM line_lots").run();
+    });
+    clearAll();
     res.json({ message: "DB 초기화 완료" });
   } catch (err) {
-    db.exec("ROLLBACK");
     console.error("DB clear error:", err);
-    res.status(500).json({ error: "DB 초기화 중 오류 발생" });
+    res.status(500).json({ error: err.message });
   }
 });
 
