@@ -28,13 +28,12 @@ function SplitTable({ splits }) {
         cols.push({
           headerName: `${i}`,
           field: key,
-          width: 48,
-          valueFormatter: (params) => (params.value === "O" ? "⬤" : ""),
-          cellStyle: (params) => ({
-            textAlign: "center",
-            fontSize: "16px",
-            color: params.value === "O" ? "#059669" : "transparent",
-          }),
+          width: 55,
+          cellStyle: (params) => {
+            if (params.value === "O")
+              return { color: "#059669", fontWeight: "bold", textAlign: "center" };
+            return { textAlign: "center" };
+          },
         });
       }
     }
