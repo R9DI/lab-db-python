@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 
 /* ─── 컬럼 정의 ─── */
@@ -387,10 +387,34 @@ function UploadSection({ section, disabled, completed, uploadResult, onUploadSuc
 function UploadPage() {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [uploadResults, setUploadResults] = useState({});
+  const [dbStats, setDbStats] = useState(null);
+  const [clearing, setClearing] = useState(false);
+
+  const fetchStats = () => {
+    axios.get("/api/upload/stats").then((res) => setDbStats(res.data)).catch(() => {});
+  };
+
+  useEffect(() => { fetchStats(); }, []);
+
+  const handleClearDB = async () => {
+    if (!window.confirm("DB의 모든 데이터(과제/실험/Split)를 삭제합니다. 계속하시겠습니까?")) return;
+    setClearing(true);
+    try {
+      await axios.delete("/api/upload/clear");
+      fetchStats();
+      setCompletedSteps([]);
+      setUploadResults({});
+    } catch (err) {
+      alert(err.response?.data?.error || "초기화 실패");
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const handleUploadSuccess = (key, result) => {
     setCompletedSteps((prev) => [...prev, key]);
     setUploadResults((prev) => ({ ...prev, [key]: result }));
+    fetchStats();
   };
 
   const allDone = completedSteps.length === 3;
@@ -402,21 +426,40 @@ function UploadPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">데이터 업로드</h1>
           <p className="text-sm text-gray-500 mt-1">
             CSV 파일로 과제, 실험, Split Table 데이터를 순서대로 업로드합니다
           </p>
         </div>
-        {completedSteps.length > 0 && !allDone && (
-          <button
-            onClick={handleReset}
-            className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition"
-          >
-            초기화
-          </button>
-        )}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          {/* 현재 DB 현황 */}
+          {dbStats && (
+            <div className="flex gap-3 text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+              <span>과제 <b className="text-indigo-600">{dbStats.projectCount}건</b></span>
+              <span>실험 <b className="text-emerald-600">{dbStats.experimentCount}건</b></span>
+              <span>Split <b className="text-amber-600">{dbStats.splitCount}건</b></span>
+            </div>
+          )}
+          <div className="flex gap-2">
+            {completedSteps.length > 0 && !allDone && (
+              <button
+                onClick={handleReset}
+                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 transition"
+              >
+                업로드 초기화
+              </button>
+            )}
+            <button
+              onClick={handleClearDB}
+              disabled={clearing}
+              className="text-sm text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg border border-red-200 hover:border-red-400 hover:bg-red-50 transition disabled:opacity-50"
+            >
+              {clearing ? "초기화 중..." : "DB 데이터 초기화"}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* 스텝 인디케이터 */}
