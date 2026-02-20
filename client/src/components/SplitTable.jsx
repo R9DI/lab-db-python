@@ -15,13 +15,6 @@ const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
 
 const getSplitColor = (val) => SPLIT_COLORS[val] || DEFAULT_SPLIT;
 
-const WfCellRenderer = (params) => {
-  if (params.value === "O") {
-    return <span style={{ color: "#059669", fontSize: "16px", lineHeight: 1 }}>⬤</span>;
-  }
-  return "";
-};
-
 function SplitTable({ splits }) {
   if (!splits || splits.length === 0) return null;
 
@@ -36,8 +29,12 @@ function SplitTable({ splits }) {
           headerName: `${i}`,
           field: key,
           width: 48,
-          cellRenderer: WfCellRenderer,
-          cellStyle: { display: "flex", alignItems: "center", justifyContent: "center", padding: 0 },
+          valueFormatter: (params) => (params.value === "O" ? "⬤" : ""),
+          cellStyle: (params) => ({
+            textAlign: "center",
+            fontSize: "16px",
+            color: params.value === "O" ? "#059669" : "transparent",
+          }),
         });
       }
     }
