@@ -202,9 +202,26 @@ router.post("/", async (req, res) => {
 
   if (!indexed) ensureIndex();
 
-  // TF-IDF 검색 (항상 수행)
-  const tfidfResults = engine.search(query, 15);
-  const enriched = tfidfResults.map((r) => {
+  // 후속 질문 시 대화 이력의 이전 사용자 쿼리를 합쳐 검색 범위 확장
+  const prevUserQueries = conversationHistory
+    .filter((m) => m.role === "user")
+    .slice(-3)
+    .map((m) => m.content)
+    .join(" ");
+  const expandedQuery = prevUserQueries ? `${query} ${prevUserQueries}` : query;
+
+  // TF-IDF 검색: 현재 쿼리 + 확장 쿼리 병합
+  const primaryResults = engine.search(query, 15);
+  const expandedResults = prevUserQueries ? engine.search(expandedQuery, 15) : [];
+
+  // 중복 제거 후 병합 (현재 쿼리 결과 우선)
+  const seenIds = new Set(primaryResults.map((r) => r.document.id));
+  const mergedResults = [
+    ...primaryResults,
+    ...expandedResults.filter((r) => !seenIds.has(r.document.id)),
+  ].slice(0, 15);
+
+  const enriched = mergedResults.map((r) => {
     const splits = db
       .prepare("SELECT * FROM split_tables WHERE plan_id = ?")
       .all(r.document.plan_id);
