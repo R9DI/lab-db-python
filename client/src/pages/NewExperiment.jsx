@@ -74,6 +74,16 @@ const emptySplit = {
   user_def_val_13: "",
   user_def_val_14: "",
   user_def_val_15: "",
+  user_def_val_16: "",
+  user_def_val_17: "",
+  user_def_val_18: "",
+  user_def_val_19: "",
+  user_def_val_20: "",
+  user_def_val_21: "",
+  user_def_val_22: "",
+  user_def_val_23: "",
+  user_def_val_24: "",
+  user_def_val_25: "",
 };
 
 /* ─── 필드 정의 ─── */
@@ -272,7 +282,7 @@ function NewExperiment() {
       { headerName: "조건", field: "work_cond_desc", minWidth: 180, flex: 1 },
       { headerName: "장비", field: "eqp_id", width: 90 },
       { headerName: "Recipe", field: "recipe_id", width: 140 },
-      ...Array.from({ length: 15 }, (_, i) => ({
+      ...Array.from({ length: 25 }, (_, i) => ({
         headerName: `${i + 1}`,
         field: `user_def_val_${i + 1}`,
         width: 48,
