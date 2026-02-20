@@ -200,8 +200,9 @@ function UploadSection({ section, disabled, completed, uploadResult, onUploadSuc
         headers: { "Content-Type": "multipart/form-data" },
       });
       const d = res.data.details;
+      const totalRows = res.data.totalRows || 0;
       const count = d.projectCount || d.experimentCount || d.splitCount || 0;
-      setStatus({ type: "success", message: `${count}건 업로드 완료!`, count });
+      setStatus({ type: "success", message: `${count}건 업로드 완료! (파일 전체 ${totalRows}행 인식)`, count });
       setFile(null);
       onUploadSuccess(section.key, { count, details: d });
     } catch (err) {
