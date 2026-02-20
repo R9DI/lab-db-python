@@ -88,29 +88,100 @@ router.post("/", upload.single("file"), (req, res) => {
         db.exec("BEGIN");
         try {
           for (const row of results) {
+            const projectParams = {
+              iacpj_nm: row.iacpj_nm || null,
+              iacpj_tgt_n: row.iacpj_tgt_n || null,
+              iacpj_level: row.iacpj_level || null,
+              iacpj_tech_n: row.iacpj_tech_n || null,
+              ia_tgt_htr_n: row.ia_tgt_htr_n || null,
+              iacpj_nud_n: row.iacpj_nud_n || null,
+              iacpj_mod_n: row.iacpj_mod_n || null,
+              iacpj_itf_uno: row.iacpj_itf_uno || null,
+              iacpj_bgn_dy: row.iacpj_bgn_dy || null,
+              iacpj_ch_n: row.iacpj_ch_n || null,
+              ia_ta_grd_n: row.ia_ta_grd_n || null,
+              project_purpose: row.project_purpose || null,
+              iacpj_ta_goa: row.iacpj_ta_goa || null,
+              iacpj_cur_stt: row.iacpj_cur_stt || null,
+              iacpj_ch_i: row.iacpj_ch_i || null,
+              ia_ch_or_i: row.ia_ch_or_i || null,
+              ia_ch_or_n: row.ia_ch_or_n || null,
+              ia_ch_or_path: row.ia_ch_or_path || null,
+              iacpj_core_tec: row.iacpj_core_tec || null,
+              iacpj_end_dy: row.iacpj_end_dy || null,
+              iacpj_reg_dy: row.iacpj_reg_dy || null,
+            };
+            const experimentParams = {
+              plan_id: row.plan_id || null,
+              iacpj_nm: row.iacpj_nm || null,
+              team: row.team || null,
+              requester: row.requester || null,
+              lot_code: row.lot_code || null,
+              module: row.module || null,
+              wf_direction: row.wf_direction || null,
+              eval_process: row.eval_process || null,
+              prev_eval: row.prev_eval || null,
+              cross_experiment: row.cross_experiment || null,
+              eval_category: row.eval_category || null,
+              eval_item: row.eval_item || null,
+              lot_request: row.lot_request || null,
+              reference: row.reference || null,
+              volume_split: row.volume_split || null,
+              assign_wf: row.assign_wf || null,
+              refdata: row.refdata || null,
+              refdata_url: row.refdata_url || null,
+              request_date: row.request_date || null,
+            };
+            const splitParams = {
+              plan_id: row.plan_id || null,
+              fac_id: row.fac_id || null,
+              oper_id: row.oper_id || null,
+              oper_nm: row.oper_nm || null,
+              eps_lot_gbn_cd: row.eps_lot_gbn_cd || null,
+              work_cond_desc: row.work_cond_desc || null,
+              eqp_id: row.eqp_id || null,
+              recipe_id: row.recipe_id || null,
+              user_def_val_1: row.user_def_val_1 || null,
+              user_def_val_2: row.user_def_val_2 || null,
+              user_def_val_3: row.user_def_val_3 || null,
+              user_def_val_4: row.user_def_val_4 || null,
+              user_def_val_5: row.user_def_val_5 || null,
+              user_def_val_6: row.user_def_val_6 || null,
+              user_def_val_7: row.user_def_val_7 || null,
+              user_def_val_8: row.user_def_val_8 || null,
+              user_def_val_9: row.user_def_val_9 || null,
+              user_def_val_10: row.user_def_val_10 || null,
+              user_def_val_11: row.user_def_val_11 || null,
+              user_def_val_12: row.user_def_val_12 || null,
+              user_def_val_13: row.user_def_val_13 || null,
+              user_def_val_14: row.user_def_val_14 || null,
+              user_def_val_15: row.user_def_val_15 || null,
+              note: row.note || null,
+            };
+
             if (type === "project") {
               if (!row.iacpj_nm) continue;
-              const res = insertProject.run(row);
+              const res = insertProject.run(projectParams);
               if (res.changes > 0) projectCount++;
             } else if (type === "experiment") {
               if (!row.plan_id || !row.iacpj_nm) continue;
-              const res = insertExperiment.run(row);
+              const res = insertExperiment.run(experimentParams);
               if (res.changes > 0) experimentCount++;
             } else if (type === "split") {
               if (!row.plan_id) continue;
-              const res = insertSplit.run(row);
+              const res = insertSplit.run(splitParams);
               if (res.changes > 0) splitCount++;
             }
             // 'all' case
             else if (type === "all") {
               if (row.iacpj_nm) {
-                if (insertProject.run(row).changes > 0) projectCount++;
+                if (insertProject.run(projectParams).changes > 0) projectCount++;
               }
               if (row.plan_id && row.iacpj_nm) {
-                if (insertExperiment.run(row).changes > 0) experimentCount++;
+                if (insertExperiment.run(experimentParams).changes > 0) experimentCount++;
               }
               if (row.plan_id) {
-                if (insertSplit.run(row).changes > 0) splitCount++;
+                if (insertSplit.run(splitParams).changes > 0) splitCount++;
               }
             }
           }
