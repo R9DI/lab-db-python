@@ -44,9 +44,10 @@ function Dashboard() {
     axios
       .get("/api/projects")
       .then((res) => {
-        setProjects(res.data);
+        const sorted = [...res.data].sort((a, b) => b.experiment_count - a.experiment_count);
+        setProjects(sorted);
         setProjectOptions(
-          res.data.map((p) => ({
+          sorted.map((p) => ({
             value: p.iacpj_nm,
             label: p.iacpj_nm,
             project: p,

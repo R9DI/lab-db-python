@@ -37,6 +37,11 @@ function ProjectCard({ project, selected, onClick, onDelete }) {
         </h3>
 
         <div className="flex items-baseline gap-2 shrink-0">
+          {p.experiment_count > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+              실험 {p.experiment_count}건
+            </span>
+          )}
           <h3 className="text-sm font-semibold text-gray-800">{p.iacpj_ch_n}</h3>
           <button
             onClick={handleDelete}

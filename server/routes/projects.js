@@ -3,7 +3,15 @@ const { db } = require("../db");
 const router = express.Router();
 
 router.get("/", (req, res) => {
-  const projects = db.prepare("SELECT * FROM projects").all();
+  const projects = db.prepare(`
+    SELECT p.*, COALESCE(e.experiment_count, 0) AS experiment_count
+    FROM projects p
+    LEFT JOIN (
+      SELECT iacpj_nm, COUNT(*) AS experiment_count
+      FROM experiments
+      GROUP BY iacpj_nm
+    ) e ON p.iacpj_nm = e.iacpj_nm
+  `).all();
   res.json(projects);
 });
 
