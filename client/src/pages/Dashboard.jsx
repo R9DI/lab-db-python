@@ -36,6 +36,7 @@ function Dashboard() {
 
   // Project search state
   const [projectOptions, setProjectOptions] = useState([]);
+  const [projectSearchText, setProjectSearchText] = useState("");
   // Experiment search state
   const [experimentOptions, setExperimentOptions] = useState([]);
   const [experimentSearchText, setExperimentSearchText] = useState("");
@@ -117,6 +118,8 @@ function Dashboard() {
   };
 
   const handleProjectSearch = (value) => {
+    setProjectSearchText(value);
+    setProjectLimit(4);
     if (!value) {
       setProjectOptions(
         projects.map((p) => ({
@@ -166,6 +169,7 @@ function Dashboard() {
   };
 
   const onProjectSelect = (value, option) => {
+    setProjectSearchText("");
     selectProject(option.project);
   };
 
@@ -185,6 +189,12 @@ function Dashboard() {
       console.error("Error fetching splits:", err);
     }
   };
+
+  const filteredProjects = projectSearchText
+    ? projects.filter((p) =>
+        p.iacpj_nm.toLowerCase().includes(projectSearchText.toLowerCase()),
+      )
+    : projects;
 
   const filteredExperiments = experimentSearchText
     ? experiments.filter((e) => {
@@ -209,7 +219,7 @@ function Dashboard() {
             <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block" />
             과제 목록
             <span className="text-sm text-gray-400 font-normal">
-              ({projects.length}건)
+              ({projectSearchText ? `${filteredProjects.length}/` : ""}{projects.length}건)
             </span>
             <button
               onClick={() => setShowAddModal(true)}
@@ -222,9 +232,11 @@ function Dashboard() {
           <div className="w-64">
             <AutoComplete
               options={projectOptions}
+              value={projectSearchText}
               style={{ width: "250px" }}
               onSelect={onProjectSelect}
               onSearch={handleProjectSearch}
+              onChange={(v) => { if (!v) { setProjectSearchText(""); setProjectLimit(4); } }}
               placeholder="과제명 검색..."
               allowClear
             />
@@ -232,7 +244,7 @@ function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {projects.slice(0, projectLimit).map((p) => (
+          {filteredProjects.slice(0, projectLimit).map((p) => (
             <ProjectCard
               key={p.id}
               project={p}
@@ -242,12 +254,12 @@ function Dashboard() {
             />
           ))}
         </div>
-        {projects.length > projectLimit && (
+        {filteredProjects.length > projectLimit && (
           <button
             onClick={() => setProjectLimit((prev) => prev + 10)}
             className="mt-3 w-full py-2 text-sm text-indigo-600 hover:text-indigo-800 border border-indigo-200 hover:border-indigo-400 rounded-lg transition"
           >
-            10개 더보기 ({projects.length - projectLimit}건 남음)
+            10개 더보기 ({filteredProjects.length - projectLimit}건 남음)
           </button>
         )}
       </section>
