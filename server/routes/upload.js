@@ -77,7 +77,7 @@ router.post("/", upload.single("file"), (req, res) => {
   const stream = fs.createReadStream(req.file.path, { encoding: "utf-8" });
 
   stream
-    .pipe(csv({ bom: true }))
+    .pipe(csv({ bom: true, mapHeaders: ({ header }) => header.toLowerCase().trim() }))
     .on("data", (data) => results.push(data))
     .on("end", () => {
       // Clean up uploaded file
@@ -247,16 +247,17 @@ router.get("/stats", (req, res) => {
 });
 
 // ─── DB 전체 초기화 ───
-router.delete("/clear", (req, res) => {
+router.post("/clear", (req, res) => {
   try {
-    db.exec("DELETE FROM split_tables");
-    db.exec("DELETE FROM experiments");
-    db.exec("DELETE FROM projects");
-    db.exec("DELETE FROM line_lots");
+    const r1 = db.prepare("DELETE FROM split_tables").run();
+    const r2 = db.prepare("DELETE FROM experiments").run();
+    const r3 = db.prepare("DELETE FROM projects").run();
+    const r4 = db.prepare("DELETE FROM line_lots").run();
+    console.log("DB clear:", r1.changes, r2.changes, r3.changes, r4.changes);
     res.json({ message: "DB 초기화 완료" });
   } catch (err) {
     console.error("DB clear error:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: String(err) });
   }
 });
 
