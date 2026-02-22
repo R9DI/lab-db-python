@@ -77,7 +77,7 @@ router.post("/", upload.single("file"), (req, res) => {
   const stream = fs.createReadStream(req.file.path, { encoding: "utf-8" });
 
   stream
-    .pipe(csv({ bom: true, mapHeaders: ({ header }) => header.toLowerCase().trim() }))
+    .pipe(csv({ bom: true }))
     .on("data", (data) => results.push(data))
     .on("end", () => {
       // Clean up uploaded file
