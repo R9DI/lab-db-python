@@ -13,7 +13,7 @@ const SPLIT_COLORS = {
 };
 const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
 
-const getSplitColor = (val) => SPLIT_COLORS[val] || DEFAULT_SPLIT;
+const getSplitColor = (val) => SPLIT_COLORS[val?.toLowerCase()] || DEFAULT_SPLIT;
 
 function SplitTable({ splits }) {
   if (!splits || splits.length === 0) return null;

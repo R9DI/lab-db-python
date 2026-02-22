@@ -14,7 +14,7 @@ const SPLIT_COLORS = {
   s4:   { row: "#FFF1F2", cell: "#FFE4E6", text: "#9F1239" },
 };
 const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
-const getSplitColor = (val) => SPLIT_COLORS[val] || DEFAULT_SPLIT;
+const getSplitColor = (val) => SPLIT_COLORS[val?.toLowerCase()] || DEFAULT_SPLIT;
 
 /* ─── 기본 빈 양식 ─── */
 const emptyProject = {
