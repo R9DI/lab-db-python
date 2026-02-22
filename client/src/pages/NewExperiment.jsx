@@ -98,22 +98,6 @@ const projectFields = [
   { key: "ia_ta_grd_n", label: "과제 등급" },
 ];
 
-const experimentFields = [
-  { key: "eval_item", label: "평가 항목 *" },
-  { key: "iacpj_nm", label: "과제명 *" },
-  { key: "team", label: "팀" },
-  { key: "requester", label: "요청자" },
-  { key: "lot_code", label: "LOT 코드" },
-  { key: "module", label: "모듈" },
-  { key: "wf_direction", label: "WF 방향" },
-  { key: "eval_process", label: "평가 공정" },
-  { key: "eval_category", label: "평가 카테고리" },
-  { key: "lot_request", label: "LOT 요청" },
-  { key: "reference", label: "참고" },
-  { key: "volume_split", label: "Volume Split" },
-  { key: "assign_wf", label: "배정 WF" },
-  { key: "request_date", label: "요청일" },
-];
 
 function NewExperiment() {
   const location = useLocation();
@@ -252,7 +236,7 @@ function NewExperiment() {
               ? "클릭하여 해제"
               : "클릭하여 배정"
         }
-        className={`w-6 h-6 rounded text-base font-bold border transition flex items-center justify-center ${
+        className={`w-6 h-6 rounded text-xs font-bold border transition flex items-center justify-center ${
           isOn
             ? "bg-amber-400 text-white border-amber-500"
             : isBlocked
@@ -379,8 +363,9 @@ function NewExperiment() {
         }
       }
 
-      // 2. 실험 저장 (JSON 직접 호출)
-      const expRes = await axios.post("/api/experiments", experiment);
+      // 2. 실험 저장 (요청일은 오늘 날짜 자동 설정)
+      const today = new Date().toISOString().slice(0, 10);
+      const expRes = await axios.post("/api/experiments", { ...experiment, request_date: today });
       results.experiment = expRes.data ? "1건 저장" : "저장 실패";
 
       // 3. 스플릿 저장 (plan_id가 없으므로 experiment id 기반으로 임시 저장)
@@ -436,7 +421,7 @@ function NewExperiment() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -493,46 +478,93 @@ function NewExperiment() {
 
       {/* ─── 실험 조건 ─── */}
       {activeSection === "experiment" && (
-        <div className="bg-white rounded-xl border border-emerald-200 p-6">
-          <h2 className="text-lg font-bold text-emerald-800 mb-4">
-            🧪 실험 조건
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {experimentFields.map(({ key, label }) => (
-              <div key={key}>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
-                  {label}
-                </label>
-                <input
-                  type="text"
-                  value={experiment[key]}
-                  onChange={(e) => updateExperiment(key, e.target.value)}
-                  onBlur={key === "plan_id" ? syncPlanId : undefined}
-                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400 ${
-                    key === "plan_id" && !experiment.plan_id
-                      ? "border-red-300 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                  placeholder={
-                    key === "plan_id" ? "새 Plan ID 입력 (필수)" : ""
-                  }
-                />
-              </div>
-            ))}
+        <div className="bg-white rounded-xl border border-emerald-200 p-6 overflow-y-auto" style={{ height: "calc(100vh - 320px)" }}>
+          <h2 className="text-lg font-bold text-emerald-800 mb-5">🧪 실험 조건</h2>
+          <div className="space-y-5">
+
+            {/* 1. 과제명 */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">과제명 *</label>
+              <input type="text" value={experiment.iacpj_nm}
+                onChange={(e) => updateExperiment("iacpj_nm", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400" />
+            </div>
+
+            {/* 2. 평가 항목 */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">평가 항목 *</label>
+              <input type="text" value={experiment.eval_item}
+                onChange={(e) => updateExperiment("eval_item", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400" />
+            </div>
+
+            {/* 3. 팀 / 요청자 */}
+            <div className="grid grid-cols-2 gap-4">
+              {[{ key: "team", label: "팀" }, { key: "requester", label: "요청자" }].map(({ key, label }) => (
+                <div key={key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                  <input type="text" value={experiment[key]}
+                    onChange={(e) => updateExperiment(key, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400" />
+                </div>
+              ))}
+            </div>
+
+            {/* 4. LOT 코드 / 모듈 / 평가 공정 / 평가 카테고리 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { key: "lot_code", label: "LOT 코드" },
+                { key: "module", label: "모듈" },
+                { key: "eval_process", label: "평가 공정" },
+                { key: "eval_category", label: "평가 카테고리" },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                  <input type="text" value={experiment[key]}
+                    onChange={(e) => updateExperiment(key, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400" />
+                </div>
+              ))}
+            </div>
+
+            {/* 5. WF 방향 / Volume Split / 배정 WF */}
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { key: "wf_direction", label: "WF 방향" },
+                { key: "volume_split", label: "Volume Split" },
+                { key: "assign_wf", label: "배정 WF" },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+                  <input type="text" value={experiment[key]}
+                    onChange={(e) => updateExperiment(key, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400" />
+                </div>
+              ))}
+            </div>
+
+            {/* 6. 참고 */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">참고</label>
+              <input type="text" value={experiment.reference}
+                onChange={(e) => updateExperiment("reference", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-400" />
+            </div>
+
           </div>
         </div>
       )}
 
       {/* ─── 과제 정보 ─── */}
       {activeSection === "project" && (
-        <div className="bg-white rounded-xl border border-indigo-200 p-6">
+        <div className="bg-white rounded-xl border border-indigo-200 p-6 overflow-y-auto" style={{ height: "calc(100vh - 320px)" }}>
           <h2 className="text-lg font-bold text-indigo-800 mb-1">
             📁 과제 정보
           </h2>
           <p className="text-xs text-gray-500 mb-4">
             이미 DB에 과제가 있으면 자동으로 기존 과제를 사용합니다.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
             {projectFields.map(({ key, label }) => (
               <div key={key}>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -578,8 +610,8 @@ function NewExperiment() {
 
       {/* ─── Split Table (AG Grid Editable) ─── */}
       {activeSection === "splits" && (
-        <div className="bg-white rounded-xl border border-amber-200 p-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-white rounded-xl border border-amber-200 p-6 flex flex-col" style={{ height: "calc(100vh - 320px)" }}>
+          <div className="flex items-center justify-between mb-3 shrink-0">
             <div>
               <h2 className="text-lg font-bold text-amber-800">
                 📋 Split Table
@@ -613,12 +645,7 @@ function NewExperiment() {
               </button>
             </div>
           </div>
-          <div
-            style={{
-              width: "100%",
-              height: Math.max(splits.length * 42 + 50, 200),
-            }}
-          >
+          <div style={{ width: "100%", flex: 1, minHeight: 0 }}>
             <AgGridReact
               ref={splitGridRef}
               rowData={splits}

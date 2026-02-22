@@ -400,12 +400,13 @@ function UploadPage() {
     if (!window.confirm("DB의 모든 데이터(과제/실험/Split)를 삭제합니다. 계속하시겠습니까?")) return;
     setClearing(true);
     try {
-      await axios.delete("/api/upload/clear");
+      await axios.post("/api/upload/clear");
       fetchStats();
       setCompletedSteps([]);
       setUploadResults({});
     } catch (err) {
-      alert(err.response?.data?.error || "초기화 실패");
+      const msg = err.response?.data?.error || err.message || "초기화 실패";
+      alert("초기화 실패: " + msg);
     } finally {
       setClearing(false);
     }
@@ -425,7 +426,7 @@ function UploadPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">데이터 업로드</h1>

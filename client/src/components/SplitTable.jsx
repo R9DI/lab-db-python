@@ -6,10 +6,10 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 const SPLIT_COLORS = {
   base: { row: "#EFF6FF", cell: "#DBEAFE", text: "#1E40AF" },
-  s1:   { row: "#FFFBEB", cell: "#FEF3C7", text: "#92400E" },
-  s2:   { row: "#F0FDF4", cell: "#D1FAE5", text: "#065F46" },
-  s3:   { row: "#F5F3FF", cell: "#EDE9FE", text: "#5B21B6" },
-  s4:   { row: "#FFF1F2", cell: "#FFE4E6", text: "#9F1239" },
+  s1: { row: "#FFFBEB", cell: "#FEF3C7", text: "#92400E" },
+  s2: { row: "#F0FDF4", cell: "#D1FAE5", text: "#065F46" },
+  s3: { row: "#F5F3FF", cell: "#EDE9FE", text: "#5B21B6" },
+  s4: { row: "#FFF1F2", cell: "#FFE4E6", text: "#9F1239" },
 };
 const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
 
@@ -18,31 +18,37 @@ const getSplitColor = (val) => SPLIT_COLORS[val] || DEFAULT_SPLIT;
 function SplitTable({ splits }) {
   if (!splits || splits.length === 0) return null;
 
-  // 데이터가 있는 WF 컬럼만 표시
+  // WF 컬럼 1~25 항상 표시
   const wfCols = useMemo(() => {
     const cols = [];
     for (let i = 1; i <= 25; i++) {
       const key = `user_def_val_${i}`;
-      const hasData = splits.some((s) => s[key] && s[key].trim());
-      if (hasData) {
-        cols.push({
-          headerName: `${i}`,
-          field: key,
-          width: 55,
-          cellStyle: (params) => {
-            if (params.value === "O")
-              return { color: "#059669", fontWeight: "bold", textAlign: "center" };
-            return { textAlign: "center" };
-          },
-        });
-      }
+      cols.push({
+        headerName: `${i}`,
+        field: key,
+        width: 55,
+        cellStyle: (params) => {
+          if (params.value === "O")
+            return {
+              color: "#059669",
+              fontWeight: "bold",
+              textAlign: "center",
+            };
+          return { textAlign: "center" };
+        },
+      });
     }
     return cols;
-  }, [splits]);
+  }, []);
 
   const columnDefs = useMemo(
     () => [
-      { headerName: "SNO", field: "sno", width: 60, cellStyle: { textAlign: "center" } },
+      {
+        headerName: "SNO",
+        field: "sno",
+        width: 60,
+        cellStyle: { textAlign: "center" },
+      },
       { headerName: "FAC", field: "fac_id", width: 65 },
       { headerName: "OPER_ID", field: "oper_id", width: 110 },
       { headerName: "OPER_NM", field: "oper_nm", width: 120 },

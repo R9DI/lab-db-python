@@ -196,7 +196,7 @@ function Search() {
       <div className="border-t bg-white p-4">
         {/* 현재 검색 컨텍스트 표시 */}
         {searchContext.length > 0 && (
-          <div className="flex items-center gap-2 max-w-4xl mx-auto mb-2 text-xs">
+          <div className="flex items-center gap-2 max-w-5xl mx-auto mb-2 text-xs">
             <span className="text-gray-400">검색 조건:</span>
             {searchContext.map((kw, i) => (
               <span
@@ -215,7 +215,7 @@ function Search() {
             </button>
           </div>
         )}
-        <form onSubmit={handleSubmit} className="flex gap-3 max-w-4xl mx-auto">
+        <form onSubmit={handleSubmit} className="flex gap-3 max-w-5xl mx-auto">
           <button
             type="button"
             onClick={handleReset}

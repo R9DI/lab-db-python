@@ -7,6 +7,7 @@ import NewExperiment from "./pages/NewExperiment";
 import LotAssign from "./pages/LotAssign";
 import ExperimentProgress from "./pages/ExperimentProgress";
 import LLMSearch from "./pages/LLMSearch";
+import LLMNewExperiment from "./pages/LLMNewExperiment";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
@@ -15,15 +16,16 @@ const dbSubPages = [
 
 const planSubPages = [
   { to: "/search", label: "실험 탐색" },
-  { to: "/llm-search", label: "실험 탐색(LLM)" },
+  { to: "/llm-search", label: "실험 탐색(w LLM)" },
   { to: "/new-experiment", label: "신규 실험" },
+  { to: "/llm-new-experiment", label: "신규 실험(w AI)" },
   { to: "/lot-assign", label: "Lot Assign" },
 ];
 
 const mainNavItems = [
   { key: "db", label: "실험 DB", sub: dbSubPages },
   { key: "plan", label: "실험 계획", sub: planSubPages },
-  { key: "progress", to: "/progress", label: "실험 진행" },
+  { key: "progress", to: "/progress", label: "실험 관리" },
 ];
 
 function DropdownNav({ item, linkClass }) {
@@ -98,7 +100,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-indigo-700 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-8">
+        <div className="px-8 py-3 flex items-center gap-8">
           <h1 className="text-xl font-bold tracking-tight">실험 통합 관리</h1>
           <div className="flex gap-2">
             {mainNavItems.map((item) =>
@@ -113,13 +115,14 @@ function App() {
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="px-8 py-6">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/search" element={<Search />} />
           <Route path="/upload" element={<UploadPage />} />
           <Route path="/new-experiment" element={<NewExperiment />} />
           <Route path="/llm-search" element={<LLMSearch />} />
+          <Route path="/llm-new-experiment" element={<LLMNewExperiment />} />
           <Route path="/lot-assign" element={<LotAssign />} />
           <Route path="/progress" element={<ExperimentProgress />} />
         </Routes>

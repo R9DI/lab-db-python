@@ -234,11 +234,11 @@ function Dashboard() {
               +
             </button>
           </h2>
-          <div className="w-64">
+          <div className="w-72">
             <AutoComplete
               options={projectOptions}
               value={projectSearchText}
-              style={{ width: "250px" }}
+              style={{ width: "100%" }}
               onSelect={onProjectSelect}
               onSearch={handleProjectSearch}
               onChange={(v) => { if (!v) { setProjectSearchText(""); setProjectLimit(4); } }}
@@ -248,7 +248,7 @@ function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {filteredProjects.slice(0, projectLimit).map((p) => (
             <ProjectCard
               key={p.id}
@@ -293,7 +293,7 @@ function Dashboard() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {filteredExperiments.slice(0, experimentLimit).map((e) => (
               <ExperimentCard
                 key={e.id}

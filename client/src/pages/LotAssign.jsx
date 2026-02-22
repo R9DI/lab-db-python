@@ -661,7 +661,7 @@ function LotAssign() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="space-y-8">
       {/* ─── 상단: Assign 전 ─── */}
       <div>
         <div className="mb-3">
