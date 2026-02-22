@@ -247,11 +247,11 @@ function UploadSection({ section, disabled, completed, uploadResult, onUploadSuc
   return (
     <section
       className={`border rounded-xl overflow-hidden transition-all ${
-        disabled ? "opacity-50 pointer-events-none" : ""
-      } ${completed ? `${c.border} ring-1 ${c.border}` : c.border}`}
+        completed ? `${c.border} ring-1 ${c.border}` : c.border
+      }`}
     >
       {/* Header */}
-      <div className={`px-6 py-4 ${c.headerBg} flex items-center justify-between`}>
+      <div className={`px-6 py-4 ${c.headerBg} flex items-center justify-between ${disabled ? "opacity-60" : ""}`}>
         <div className="flex items-center gap-3">
           <span className="text-2xl">{section.icon}</span>
           <div>
@@ -321,7 +321,7 @@ function UploadSection({ section, disabled, completed, uploadResult, onUploadSuc
 
       {/* Upload Area */}
       {!completed ? (
-        <div className="px-6 py-4 bg-white border-t border-gray-100">
+        <div className={`px-6 py-4 bg-white border-t border-gray-100 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
           <div className="flex items-center gap-3">
             <button
               onClick={downloadTemplate}

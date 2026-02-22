@@ -55,7 +55,7 @@ function Modal({ title, onClose, children, footer }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-[90vw] max-w-4xl max-h-[80vh] flex flex-col overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-[95vw] max-w-7xl max-h-[92vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -166,6 +166,7 @@ function LotAssign() {
   const [splitModal, setSplitModal] = useState(null);
   const [summaryModal, setSummaryModal] = useState(null);
   const [assignModal, setAssignModal] = useState(null); // { experimentId, evalItem }
+  const [detailModal, setDetailModal] = useState(null);
   const [lineLots, setLineLots] = useState([]);
 
   // 데이터 로드
@@ -282,6 +283,20 @@ function LotAssign() {
       });
     } catch (err) {
       console.error("Split 데이터 로드 실패:", err);
+    }
+  }, []);
+
+  // 평가항목 클릭 → 상세 모달 (pending 테이블)
+  const openDetailModal = useCallback(async (data) => {
+    try {
+      const res = await axios.get(`/api/experiments/${data.id}`);
+      setDetailModal({
+        experiment: res.data,
+        project: res.data.project,
+        splits: res.data.splits || [],
+      });
+    } catch (err) {
+      console.error("실험 상세 로드 실패:", err);
     }
   }, []);
 
@@ -527,36 +542,91 @@ function LotAssign() {
       {
         headerName: "평가 항목",
         field: "eval_item",
-        minWidth: 180,
+        minWidth: 150,
         flex: 2,
-        cellStyle: { fontWeight: "600" },
+        cellStyle: { fontWeight: "600", color: "#4F46E5", cursor: "pointer" },
+        cellRenderer: (params) => (
+          <span
+            onClick={() => openDetailModal(params.data)}
+            className="hover:underline cursor-pointer"
+          >
+            {params.value}
+          </span>
+        ),
       },
       {
         headerName: "과제명",
         field: "iacpj_nm",
-        minWidth: 160,
+        minWidth: 130,
         flex: 2,
+      },
+      {
+        headerName: "평가 카테고리",
+        field: "eval_category",
+        width: 120,
+      },
+      {
+        headerName: "평가 공정",
+        field: "eval_process",
+        width: 130,
+      },
+      {
+        headerName: "모듈",
+        field: "module",
+        width: 80,
+      },
+      {
+        headerName: "랏코드",
+        field: "lot_code",
+        width: 120,
+      },
+      {
+        headerName: "신청자",
+        field: "requester",
+        width: 85,
+      },
+      {
+        headerName: "배정 WF",
+        field: "assign_wf",
+        width: 90,
       },
       {
         headerName: "Assign",
         field: "status",
-        width: 130,
+        width: 80,
         cellRenderer: (params) => (
           <button
             onClick={() => openAssignModal(params.data)}
-            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-sm cursor-pointer"
+            className="w-6 h-6 rounded border-2 border-gray-300 hover:border-indigo-400 hover:bg-indigo-50 flex items-center justify-center transition cursor-pointer"
+            title="Lot Assign"
           >
-            📦 Assign
+            <svg
+              className="w-3.5 h-3.5 text-indigo-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+              />
+            </svg>
           </button>
         ),
-        cellStyle: { display: "flex", alignItems: "center" },
+        cellStyle: {
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        },
         sortable: false,
         filter: false,
       },
       {
         headerName: "Split Table",
         field: "split_view",
-        width: 100,
+        width: 95,
         cellRenderer: ViewButtonRenderer,
         cellStyle: {
           display: "flex",
@@ -567,7 +637,7 @@ function LotAssign() {
         filter: false,
       },
     ],
-    [openAssignModal, ViewButtonRenderer],
+    [openAssignModal, ViewButtonRenderer, openDetailModal],
   );
 
   // ─── 하단 테이블 (진행 중) 컬럼 ───
@@ -818,6 +888,40 @@ function LotAssign() {
           />
         </Modal>
       )}
+      {/* ─── 실험 상세 Modal (평가항목 클릭) ─── */}
+      {detailModal && (
+        <Modal
+          title={`🧪 실험 상세 — ${detailModal.experiment.eval_item || detailModal.experiment.plan_id}`}
+          onClose={() => setDetailModal(null)}
+        >
+          <div className="space-y-6">
+            <SummaryContent
+              experiment={detailModal.experiment}
+              project={detailModal.project}
+            />
+            {detailModal.splits.length > 0 && (
+              <div>
+                <h4 className="text-sm font-bold text-gray-700 mb-2">
+                  Split Table
+                  <span className="text-xs text-gray-400 font-normal ml-2">
+                    (plan_id: {detailModal.experiment.plan_id || "N/A"})
+                  </span>
+                </h4>
+                <SplitTable splits={detailModal.splits} />
+              </div>
+            )}
+            {detailModal.splits.length === 0 && (
+              <div>
+                <h4 className="text-sm font-bold text-gray-700 mb-2">Split Table</h4>
+                <p className="text-gray-400 text-sm text-center py-4">
+                  등록된 Split 데이터가 없습니다.
+                </p>
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
       {/* ─── Assign Modal (Lot 선택) ─── */}
       {assignModal && (
         <Modal

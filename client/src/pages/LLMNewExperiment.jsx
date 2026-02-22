@@ -44,8 +44,58 @@ const projectFields = [
 ];
 
 
+/* ─── AI 봇 캐릭터 ─── */
+function TigerCharacter({ onClick, chatVisible, speechText }) {
+  const [blink, setBlink] = useState(false);
+
+  useEffect(() => {
+    let timer;
+    const schedule = () => {
+      const delay = 2800 + Math.random() * 2200; // 2.8~5초 랜덤
+      timer = setTimeout(() => {
+        setBlink(true);
+        setTimeout(() => { setBlink(false); schedule(); }, 180);
+      }, delay);
+    };
+    schedule();
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="relative shrink-0">
+      {/* 말풍선 - 레이아웃에 영향 없도록 절대 위치 */}
+      {speechText && (
+        <div className="absolute right-full top-1/2 -translate-y-1/2 mr-3 pointer-events-none z-50 w-max" style={{ maxWidth: 320 }}>
+          <div className="bg-white border border-indigo-100 rounded-2xl px-3 py-2 text-xs text-gray-700 shadow-lg leading-relaxed whitespace-pre-line">
+            {speechText}
+          </div>
+          {/* 오른쪽 꼬리 */}
+          <div className="absolute top-1/2 -right-[7px] -translate-y-1/2 w-3.5 h-3.5 bg-white border-r border-t border-indigo-100 rotate-45" />
+        </div>
+      )}
+      {/* AI 봇 버튼 */}
+      <button
+        onClick={onClick}
+        title={chatVisible ? "AI 패널 숨기기" : "AI 도우미 열기"}
+        className="hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+      >
+        <svg viewBox="0 0 90 64" width="64" height="46">
+          {/* 몸통 - 둥근 사각형 */}
+          <rect x="2" y="2" width="86" height="60" rx="16" fill="#4338CA"/>
+          {/* 눈 왼쪽 */}
+          <ellipse cx="29" cy="32" rx="9" ry={blink ? 1.5 : 13} fill="white"
+            style={{ transition: blink ? "ry 0.06s ease-in" : "ry 0.12s ease-out" }}/>
+          {/* 눈 오른쪽 */}
+          <ellipse cx="61" cy="32" rx="9" ry={blink ? 1.5 : 13} fill="white"
+            style={{ transition: blink ? "ry 0.06s ease-in" : "ry 0.12s ease-out" }}/>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 /* ─── 채팅 패널 ─── */
-function ChatPanel() {
+function ChatPanel({ onHide }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -80,9 +130,20 @@ function ChatPanel() {
     <div className="flex flex-col h-full bg-white border border-gray-200 rounded-xl overflow-hidden">
       {/* 헤더 */}
       <div className="px-4 py-3 bg-indigo-700 text-white shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-semibold text-sm">AI 실험 도우미</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-semibold text-sm">AI 실험 도우미</span>
+          </div>
+          <button
+            onClick={onHide}
+            className="w-6 h-6 flex items-center justify-center rounded hover:bg-indigo-600 text-indigo-200 hover:text-white transition"
+            title="패널 숨기기"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
         <p className="text-xs text-indigo-200 mt-0.5">논문 · 과거 실험 · 조건 추천</p>
       </div>
@@ -167,6 +228,8 @@ function LLMNewExperiment() {
   const [activeSection, setActiveSection] = useState("experiment");
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState(null);
+  const [chatVisible, setChatVisible] = useState(true);
+  const [speechText, setSpeechText] = useState(null);
 
   const updateProject = (key, val) => setProject((p) => ({ ...p, [key]: val }));
   const updateExperiment = (key, val) => setExperiment((e) => ({ ...e, [key]: val }));
@@ -284,6 +347,21 @@ function LLMNewExperiment() {
     setSaving(false);
   };
 
+  const fieldMessages = {
+    iacpj_nm:     "어떤 과제의 실험인가요?\nDB에 없으면 자동으로 새 과제를 등록해드릴게요!",
+    eval_item:    "핵심 평가 항목을 구체적으로 적어줄수록\n더 좋은 실험 조건을 추천해드릴 수 있어요 🎯",
+    team:         "어느 팀의 실험인지 알려주세요!\n팀별 과거 실험 히스토리도 찾아드릴게요",
+    requester:    "실험을 담당하는 분 이름을 적어주세요",
+    lot_code:     "이런 실험엔 RSAB 계열을 많이 써왔어요!\n특정 LOT 코드가 있으면 입력해주세요",
+    module:       "같은 모듈의 이전 실험과\n조건을 비교해드릴게요 🔍",
+    eval_process: "어느 공정 단계에서 평가하나요?\n이전 유사 공정 데이터를 찾아볼게요!",
+    eval_category:"평가 분류에 따라 최적 Split 조건이\n달라질 수 있어요!",
+    wf_direction: "WF 방향별로 결과 차이가 있을 수 있어요!\n이전 방향별 데이터를 비교해드릴게요",
+    volume_split: "Split 수가 많을수록 조건 비교가 정밀해져요!\n몇 개로 나눌 계획인가요?",
+    assign_wf:    "라인 현황을 고려해서\n최적의 WF를 추천해드릴게요!",
+    reference:    "특이사항이나 참고할 내용이 있으면\n자유롭게 적어주세요",
+  };
+
   const sectionBtns = [
     { key: "experiment", label: "🧪 실험 조건", active: "border-emerald-500 text-emerald-700 bg-emerald-50" },
     { key: "project",    label: "📁 과제 정보", active: "border-indigo-500 text-indigo-700 bg-indigo-50" },
@@ -292,7 +370,7 @@ function LLMNewExperiment() {
 
   return (
     <Splitter style={{ height: "calc(100vh - 112px)" }}>
-      <Splitter.Panel defaultSize="65%" min="40%" style={{ paddingRight: 10 }}>
+      <Splitter.Panel defaultSize="65%" min="40%" style={{ paddingRight: chatVisible ? 10 : 0 }}>
       <div className="flex flex-col h-full gap-4">
         {/* 헤더 */}
         <div className="flex items-center justify-between">
@@ -300,12 +378,13 @@ function LLMNewExperiment() {
             <h1 className="text-2xl font-bold text-gray-800">신규 실험 신청 (AI)</h1>
             <p className="text-sm text-gray-500 mt-1">AI 도우미와 함께 실험 계획을 작성합니다</p>
           </div>
-          <button
-            onClick={() => navigate("/new-experiment")}
-            className="px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 border border-indigo-200 rounded-lg transition"
-          >
-            일반 실험 신청으로
-          </button>
+          {!chatVisible && (
+            <TigerCharacter
+              onClick={() => setChatVisible(true)}
+              chatVisible={chatVisible}
+              speechText={speechText}
+            />
+          )}
         </div>
 
         {/* 섹션 탭 */}
@@ -336,6 +415,8 @@ function LLMNewExperiment() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">과제명 *</label>
                 <input type="text" value={experiment.iacpj_nm}
                   onChange={(e) => updateExperiment("iacpj_nm", e.target.value)}
+                  onFocus={() => setSpeechText(fieldMessages.iacpj_nm)}
+                  onBlur={() => setSpeechText(null)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
               </div>
 
@@ -344,6 +425,8 @@ function LLMNewExperiment() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">평가 항목 *</label>
                 <input type="text" value={experiment.eval_item}
                   onChange={(e) => updateExperiment("eval_item", e.target.value)}
+                  onFocus={() => setSpeechText(fieldMessages.eval_item)}
+                  onBlur={() => setSpeechText(null)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
               </div>
 
@@ -354,6 +437,8 @@ function LLMNewExperiment() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
                     <input type="text" value={experiment[key]}
                       onChange={(e) => updateExperiment(key, e.target.value)}
+                      onFocus={() => setSpeechText(fieldMessages[key])}
+                      onBlur={() => setSpeechText(null)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                   </div>
                 ))}
@@ -371,6 +456,8 @@ function LLMNewExperiment() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
                     <input type="text" value={experiment[key]}
                       onChange={(e) => updateExperiment(key, e.target.value)}
+                      onFocus={() => setSpeechText(fieldMessages[key])}
+                      onBlur={() => setSpeechText(null)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                   </div>
                 ))}
@@ -387,6 +474,8 @@ function LLMNewExperiment() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
                     <input type="text" value={experiment[key]}
                       onChange={(e) => updateExperiment(key, e.target.value)}
+                      onFocus={() => setSpeechText(fieldMessages[key])}
+                      onBlur={() => setSpeechText(null)}
                       className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
                   </div>
                 ))}
@@ -397,6 +486,8 @@ function LLMNewExperiment() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">참고</label>
                 <input type="text" value={experiment.reference}
                   onChange={(e) => updateExperiment("reference", e.target.value)}
+                  onFocus={() => setSpeechText(fieldMessages.reference)}
+                  onBlur={() => setSpeechText(null)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300" />
               </div>
 
@@ -521,9 +612,11 @@ function LLMNewExperiment() {
       </div>
       </Splitter.Panel>
 
-      <Splitter.Panel min="20%" max="55%" style={{ paddingLeft: 10 }}>
-        <ChatPanel />
-      </Splitter.Panel>
+      {chatVisible && (
+        <Splitter.Panel min="20%" max="55%" collapsible style={{ paddingLeft: 10 }}>
+          <ChatPanel onHide={() => setChatVisible(false)} />
+        </Splitter.Panel>
+      )}
     </Splitter>
   );
 }

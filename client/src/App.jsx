@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Routes, Route, NavLink, useLocation } from "react-router-dom";
+import { Routes, Route, NavLink, Link, useLocation } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Search from "./pages/Search";
 import UploadPage from "./pages/UploadPage";
@@ -8,6 +8,7 @@ import LotAssign from "./pages/LotAssign";
 import ExperimentProgress from "./pages/ExperimentProgress";
 import LLMSearch from "./pages/LLMSearch";
 import LLMNewExperiment from "./pages/LLMNewExperiment";
+import HomePage from "./pages/HomePage";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
@@ -16,7 +17,7 @@ const dbSubPages = [
 
 const planSubPages = [
   { to: "/search", label: "실험 탐색" },
-  { to: "/llm-search", label: "실험 탐색(w LLM)" },
+  { to: "/llm-search", label: "실험 탐색(w AI)" },
   { to: "/new-experiment", label: "신규 실험" },
   { to: "/llm-new-experiment", label: "신규 실험(w AI)" },
   { to: "/lot-assign", label: "Lot Assign" },
@@ -101,7 +102,9 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-indigo-700 text-white shadow-lg">
         <div className="px-8 py-3 flex items-center gap-8">
-          <h1 className="text-xl font-bold tracking-tight">실험 통합 관리</h1>
+          <Link to="/home" className="text-xl font-bold tracking-tight hover:text-indigo-200 transition-colors">
+            실험 통합 관리
+          </Link>
           <div className="flex gap-2">
             {mainNavItems.map((item) =>
               item.sub ? (
@@ -117,6 +120,7 @@ function App() {
       </nav>
       <main className="px-8 py-6">
         <Routes>
+          <Route path="/home" element={<HomePage />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/search" element={<Search />} />
           <Route path="/upload" element={<UploadPage />} />

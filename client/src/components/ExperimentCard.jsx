@@ -24,7 +24,7 @@ function ExperimentCard({ experiment, selected, onClick }) {
     { label: "참고", value: e.reference },
     { label: "참조 데이터", value: e.refdata },
     { label: "요청일", value: e.request_date },
-  ].filter((f) => f.value);
+  ];
 
   return (
     <div
@@ -44,15 +44,25 @@ function ExperimentCard({ experiment, selected, onClick }) {
       </div>
 
       {/* 기본 정보 */}
-      <div className="grid grid-cols-2 gap-1 text-xs text-gray-500 mb-2">
-        <span>LOT CODE: <b className="text-gray-700">{e.lot_code}</b></span>
-        <span>LOT ID: <b className="text-gray-700">{e.plan_id}</b></span>
-        <span className="col-span-2">
-          요청자: <b className="text-gray-700">{e.requester}</b>{e.team ? ` (${e.team})` : ""}
-        </span>
-        <span>평가항목: <b className="text-gray-700">{e.eval_category}</b></span>
-        <span>모듈: <b className="text-gray-700">{e.module}</b></span>
-        <span className="col-span-2">평가공정: <b className="text-gray-700">{e.eval_process}</b></span>
+      <div className="space-y-1 text-xs text-gray-500 mb-2">
+        {/* 2번째 줄: LOT CODE / LOT ID */}
+        <div className="grid grid-cols-2 gap-1">
+          <span>LOT CODE: <b className="text-gray-700">{e.lot_code}</b></span>
+          <span>LOT ID: <b className="text-gray-700">{e.plan_id}</b></span>
+        </div>
+        {/* 3번째 줄: 요청자 */}
+        <div>
+          <span>요청자: <b className="text-gray-700">{e.requester}</b>{e.team ? ` (${e.team})` : ""}</span>
+        </div>
+        {/* 4번째 줄: 평가항목 / 모듈 */}
+        <div className="grid grid-cols-2 gap-1">
+          <span>평가항목: <b className="text-gray-700">{e.eval_category}</b></span>
+          <span>모듈: <b className="text-gray-700">{e.module}</b></span>
+        </div>
+        {/* 5번째 줄: 평가공정 */}
+        <div>
+          <span>평가공정: <b className="text-gray-700">{e.eval_process}</b></span>
+        </div>
       </div>
 
       {/* 상세 보기 버튼 */}
@@ -72,7 +82,7 @@ function ExperimentCard({ experiment, selected, onClick }) {
           {detailFields.map(({ label, value }) => (
             <div key={label}>
               <span className="text-gray-400">{label}: </span>
-              <b className="text-gray-700">{value}</b>
+              <b className="text-gray-700">{value ?? ""}</b>
             </div>
           ))}
           {e.refdata_url && (

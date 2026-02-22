@@ -54,39 +54,33 @@ function ProjectCard({ project, selected, onClick, onDelete }) {
       </div>
 
       {/* 속성 */}
-      <div className="grid grid-cols-3 gap-1 text-xs text-gray-500 mb-2">
-        <span>
-          Tech: <b className="text-gray-700">{p.iacpj_tech_n}</b>
-        </span>
-        <span>
-          Module: <b className="text-gray-700">{p.iacpj_mod_n}</b>
-        </span>
-        <span>
-          등급: <b className="text-gray-700">{p.ia_ta_grd_n}</b>
-        </span>
-
-        <span>
-          검증LV: <b className="text-gray-700">{p.iacpj_level}</b>
-        </span>
-        <span>
-          시작일: <b className="text-gray-700">{p.iacpj_bgn_dy}</b>
-        </span>
-
-        {/* HTRS 색상 */}
-        <span className="flex items-center gap-1">
-          HTRS:
-          <b className={`px-2 py-0.5 rounded-full ${htrsBadgeClass}`}>
-            {p.ia_tgt_htr_n}
-          </b>
-        </span>
-
-        {/* NUDD */}
-        <span className="flex items-center gap-1">
-          NUDD:
-          <b className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-            {p.iacpj_nud_n}
-          </b>
-        </span>
+      <div className="space-y-1 text-xs text-gray-500 mb-2">
+        {/* 2번째 줄: Tech / Module / 등급 */}
+        <div className="grid grid-cols-3 gap-1">
+          <span>Tech: <b className="text-gray-700">{p.iacpj_tech_n}</b></span>
+          <span>Module: <b className="text-gray-700">{p.iacpj_mod_n}</b></span>
+          <span>등급: <b className="text-gray-700">{p.ia_ta_grd_n}</b></span>
+        </div>
+        {/* 3번째 줄: 검증LV / 시작일 */}
+        <div className="grid grid-cols-3 gap-1">
+          <span>검증LV: <b className="text-gray-700">{p.iacpj_level}</b></span>
+          <span>시작일: <b className="text-gray-700">{p.iacpj_bgn_dy}</b></span>
+        </div>
+        {/* 4번째 줄: HTRS / NUDD */}
+        <div className="grid grid-cols-3 gap-1">
+          <span className="flex items-center gap-1">
+            HTRS:
+            <b className={`px-2 py-0.5 rounded-full ${htrsBadgeClass}`}>
+              {p.ia_tgt_htr_n}
+            </b>
+          </span>
+          <span className="flex items-center gap-1">
+            NUDD:
+            <b className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+              {p.iacpj_nud_n}
+            </b>
+          </span>
+        </div>
       </div>
 
       {/* 상세 토글 */}
@@ -105,24 +99,18 @@ function ProjectCard({ project, selected, onClick, onDelete }) {
           className="mt-2 space-y-2 text-xs border-t pt-2"
           onClick={(e) => e.stopPropagation()}
         >
-          <div>
-            <span className="text-gray-400 block">프로젝트 목적</span>
-            <p className="text-gray-700 whitespace-pre-wrap">
-              {p.project_purpose || "-"}
-            </p>
-          </div>
-          <div>
-            <span className="text-gray-400 block">프로젝트 목표</span>
-            <p className="text-gray-700 whitespace-pre-wrap">
-              {p.iacpj_ta_goa || "-"}
-            </p>
-          </div>
-          <div>
-            <span className="text-gray-400 block">현 상황</span>
-            <p className="text-gray-700 whitespace-pre-wrap">
-              {p.iacpj_cur_stt || "-"}
-            </p>
-          </div>
+          {[
+            { label: "개발 분류", value: p.iacpj_tgt_n },
+            { label: "종료일", value: p.iacpj_end_dy },
+            { label: "현재 상태", value: p.iacpj_cur_stt },
+            { label: "프로젝트 목적", value: p.project_purpose },
+            { label: "프로젝트 목표", value: p.iacpj_ta_goa },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <span className="text-gray-400 block">{label}</span>
+              <p className="text-gray-700 whitespace-pre-wrap">{value}</p>
+            </div>
+          ))}
         </div>
       )}
     </div>
