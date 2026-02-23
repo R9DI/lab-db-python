@@ -15,8 +15,13 @@ router.get("/", (req, res) => {
     ) e ON p.iacpj_nm = e.iacpj_nm
     LEFT JOIN (
       SELECT ex.iacpj_nm, COUNT(*) AS split_count
-      FROM split_tables st
-      JOIN experiments ex ON st.plan_id = ex.plan_id
+      FROM (
+        SELECT st.plan_id
+        FROM split_tables st
+        GROUP BY st.plan_id
+        HAVING COUNT(*) >= 2
+      ) valid_splits
+      JOIN experiments ex ON valid_splits.plan_id = ex.plan_id
       GROUP BY ex.iacpj_nm
     ) s ON p.iacpj_nm = s.iacpj_nm
   `).all();
