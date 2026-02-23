@@ -283,52 +283,41 @@ export default function DBAnalysis() {
     },
   });
 
-  // 차트 2: Note/조건 누락 건수 — 이슈 있는 과제만, 많은 순
-  const chart2Data = [...projectSummary]
-    .filter((p) => p.note_missing > 0 || p.cond_missing > 0)
-    .sort((a, b) => (b.note_missing + b.cond_missing) - (a.note_missing + a.cond_missing));
-  const chart2Names = chart2Data.map((p) => shortName(p.iacpj_nm));
+  // 차트 2a: Note 누락률 — note 있는 과제만, % 높은 순
+  const chart2aData = [...projectSummary]
+    .filter((p) => p.note_missing > 0)
+    .sort((a, b) => pct(b.note_missing, b.oper_row_count) - pct(a.note_missing, a.oper_row_count));
 
-  const chart2Option = {
-    tooltip: {
-      trigger: "axis",
-      formatter: (params) => {
-        const p = chart2Data[params[0].dataIndex];
-        const lines = [`${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)`];
-        params.forEach((param) => { if (param.value > 0) lines.push(`${param.seriesName}: ${param.value}건`); });
-        return lines.join("<br/>");
-      },
+  const chart2aOption = makeBarOption({
+    data: chart2aData,
+    valueKey: "note_missing",
+    denomKey: "oper_row_count",
+    color: null,
+    colorFn: () => "#fbbf24",
+    seriesLabel: "Note 누락률",
+    tooltip: (params) => {
+      const p = chart2aData[params[0].dataIndex];
+      return `${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)<br/>Note 누락: ${p.note_missing}건 (${params[0].value}%)`;
     },
-    legend: { top: 2, right: 16, data: ["Note 누락", "조건 누락"], textStyle: { fontSize: 11 } },
-    grid: { left: 44, right: 16, top: 32, bottom: 70 },
-    xAxis: {
-      type: "category",
-      data: chart2Names,
-      axisLabel: { rotate: 35, fontSize: 10, interval: 0, color: "#6b7280" },
-      axisTick: { alignWithLabel: true },
+  });
+
+  // 차트 2b: 조건 누락률 — cond 있는 과제만, % 높은 순
+  const chart2bData = [...projectSummary]
+    .filter((p) => p.cond_missing > 0)
+    .sort((a, b) => pct(b.cond_missing, b.oper_row_count) - pct(a.cond_missing, a.oper_row_count));
+
+  const chart2bOption = makeBarOption({
+    data: chart2bData,
+    valueKey: "cond_missing",
+    denomKey: "oper_row_count",
+    color: null,
+    colorFn: () => "#f97316",
+    seriesLabel: "조건 누락률",
+    tooltip: (params) => {
+      const p = chart2bData[params[0].dataIndex];
+      return `${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)<br/>조건 누락: ${p.cond_missing}건 (${params[0].value}%)`;
     },
-    yAxis: {
-      type: "value", minInterval: 1,
-      axisLabel: { color: "#9ca3af", fontSize: 10 },
-      splitLine: { lineStyle: { color: "#f3f4f6" } },
-    },
-    series: [
-      {
-        name: "Note 누락",
-        type: "bar",
-        data: chart2Data.map((p) => ({ value: p.note_missing, itemStyle: { color: "#fbbf24", borderRadius: [3, 3, 0, 0] } })),
-        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}건` : "" },
-        barMaxWidth: 30,
-      },
-      {
-        name: "조건 누락",
-        type: "bar",
-        data: chart2Data.map((p) => ({ value: p.cond_missing, itemStyle: { color: "#f97316", borderRadius: [3, 3, 0, 0] } })),
-        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}건` : "" },
-        barMaxWidth: 30,
-      },
-    ],
-  };
+  });
 
   // 차트 3: 평가아이템 중복 건수 — 중복 건수 높은 순
   const chart3Data = [...projectSummary]
@@ -388,13 +377,23 @@ export default function DBAnalysis() {
           <ReactECharts option={chart1Option} style={{ height: 220 }} />
         </div>
 
-        {chart2Data.length > 0 && (
+        {chart2aData.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <p className="text-xs font-semibold text-gray-600 mb-1">
-              OPER Row 누락 건수 (Note / 조건)
-              <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 누락된 건수, 합산 많은 순)</span>
+              Note 누락률
+              <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 Note 누락 %, 높은 순)</span>
             </p>
-            <ReactECharts option={chart2Option} style={{ height: 220 }} />
+            <ReactECharts option={chart2aOption} style={{ height: 220 }} />
+          </div>
+        )}
+
+        {chart2bData.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-xs font-semibold text-gray-600 mb-1">
+              조건 누락률
+              <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 작업조건 누락 %, 높은 순)</span>
+            </p>
+            <ReactECharts option={chart2bOption} style={{ height: 220 }} />
           </div>
         )}
 

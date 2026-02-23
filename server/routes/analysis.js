@@ -93,6 +93,16 @@ router.get("/", (req, res) => {
     ORDER BY p.iacpj_nm
   `).all();
 
+  // OPER_ID가 있는 split row 수 (과제별 분모용)
+  const operRowCounts = db.prepare(`
+    SELECT ex.iacpj_nm, COUNT(*) AS oper_row_count
+    FROM split_tables st
+    JOIN experiments ex ON st.plan_id = ex.plan_id
+    WHERE st.oper_id IS NOT NULL AND TRIM(st.oper_id) != ''
+    GROUP BY ex.iacpj_nm
+  `).all();
+  const operRowMap = Object.fromEntries(operRowCounts.map((r) => [r.iacpj_nm, r.oper_row_count]));
+
   function countBy(arr, key, projectName) {
     return arr.filter((r) => r[key] === projectName).length;
   }
@@ -100,6 +110,7 @@ router.get("/", (req, res) => {
   const projectSummary = allProjects.map((p) => ({
     iacpj_nm: p.iacpj_nm,
     experiment_count: p.experiment_count,
+    oper_row_count: operRowMap[p.iacpj_nm] || 0,
     split_poor:    countBy(splitPoor,    "iacpj_nm", p.iacpj_nm),
     dup_eval:      countBy(dupEvalItem,  "iacpj_nm", p.iacpj_nm),
     note_missing:  countBy(noteMissing,  "iacpj_nm", p.iacpj_nm),
