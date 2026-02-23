@@ -234,10 +234,8 @@ router.post("/", async (req, res) => {
   let candidates;
   if (quotedTerms.length > 0) {
     const exactMatched = engine.documents.filter((doc) => {
-      const docTokenSet = new Set(engine.tokenize(engine._docToText(doc)));
-      return quotedTerms.every((phrase) =>
-        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
-      );
+      const rawText = engine._docToText(doc).toLowerCase();
+      return quotedTerms.every((phrase) => rawText.includes(phrase.toLowerCase()));
     });
     if (normalQuery) {
       const tfidfResults = engine.search(normalQuery, engine.documents.length);

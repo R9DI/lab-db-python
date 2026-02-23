@@ -257,10 +257,8 @@ router.post("/", (req, res) => {
   let candidates;
   if (quotedTerms.length > 0) {
     const exactMatched = engine.documents.filter((doc) => {
-      const docTokenSet = new Set(engine.tokenize(engine._docToText(doc)));
-      return quotedTerms.every((phrase) =>
-        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
-      );
+      const rawText = engine._docToText(doc).toLowerCase();
+      return quotedTerms.every((phrase) => rawText.includes(phrase.toLowerCase()));
     });
     if (normalQuery) {
       // 일반 키워드도 있으면 TF-IDF 점수로 정렬
