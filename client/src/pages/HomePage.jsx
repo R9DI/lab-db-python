@@ -14,8 +14,13 @@ const DB_TABLES = [
   },
   {
     icon: "📋",
-    title: "Split Table",
+    title: "실험 조건 (Split Table)",
     desc: "공정별 실험 조건\n장비 · Recipe · 변수",
+  },
+  {
+    icon: "📈",
+    title: "실험 결과 (Lot Summary)",
+    desc: "LOT 별 실험결과\nInline/Outline 분석",
   },
 ];
 
@@ -71,7 +76,7 @@ const FLOW_STEPS = [
 ];
 
 const QUICK_LINKS = [
-  { title: "데이터 업로드", desc: "CSV로 과제·실험 등록", icon: "📤", link: "/upload", color: "text-indigo-600", border: "hover:border-indigo-300" },
+  { title: "통합 DB", desc: "전체 실험 데이터 조회", icon: "🗄️", link: "/", color: "text-indigo-600", border: "hover:border-indigo-300" },
   { title: "실험 탐색", desc: "과거 실험 검색·분석", icon: "🔍", link: "/search", color: "text-violet-600", border: "hover:border-violet-300" },
   { title: "Lot Assign", desc: "라인 랏 배정", icon: "🔗", link: "/lot-assign", color: "text-blue-600", border: "hover:border-blue-300" },
   { title: "실험 관리", desc: "진행 현황 관리", icon: "📊", link: "/progress", color: "text-emerald-600", border: "hover:border-emerald-300" },
@@ -92,7 +97,7 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   return (
-    <div className="max-w-5xl mx-auto space-y-5 py-1">
+    <div className="max-w-7xl mx-auto space-y-5 py-1">
       {/* 헤더 */}
       <div>
         <h1 className="text-2xl font-bold text-gray-800">시스템 개요</h1>
@@ -113,7 +118,7 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {DB_TABLES.map((t) => (
               <div key={t.title} className="bg-white/10 rounded-lg px-4 py-3">
                 <div className="text-xl mb-1.5">{t.icon}</div>
