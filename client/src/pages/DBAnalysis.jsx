@@ -283,13 +283,10 @@ export default function DBAnalysis() {
     },
   });
 
-  // 차트 2: OPER Row 불량률 — OPER 행 있는 과제만, 최대 불량률 높은 순
+  // 차트 2: Note/조건 누락 건수 — 이슈 있는 과제만, 많은 순
   const chart2Data = [...projectSummary]
-    .filter((p) => p.oper_row_count > 0)
-    .sort((a, b) =>
-      Math.max(pct(b.note_missing, b.oper_row_count), pct(b.cond_missing, b.oper_row_count)) -
-      Math.max(pct(a.note_missing, a.oper_row_count), pct(a.cond_missing, a.oper_row_count))
-    );
+    .filter((p) => p.note_missing > 0 || p.cond_missing > 0)
+    .sort((a, b) => (b.note_missing + b.cond_missing) - (a.note_missing + a.cond_missing));
   const chart2Names = chart2Data.map((p) => shortName(p.iacpj_nm));
 
   const chart2Option = {
@@ -298,11 +295,11 @@ export default function DBAnalysis() {
       formatter: (params) => {
         const p = chart2Data[params[0].dataIndex];
         const lines = [`${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)`];
-        params.forEach((param) => { lines.push(`${param.seriesName}: ${param.value}%`); });
+        params.forEach((param) => { if (param.value > 0) lines.push(`${param.seriesName}: ${param.value}건`); });
         return lines.join("<br/>");
       },
     },
-    legend: { top: 2, right: 16, data: ["Note 누락률", "조건 누락률"], textStyle: { fontSize: 11 } },
+    legend: { top: 2, right: 16, data: ["Note 누락", "조건 누락"], textStyle: { fontSize: 11 } },
     grid: { left: 44, right: 16, top: 32, bottom: 70 },
     xAxis: {
       type: "category",
@@ -311,23 +308,23 @@ export default function DBAnalysis() {
       axisTick: { alignWithLabel: true },
     },
     yAxis: {
-      type: "value", min: 0, max: 100,
-      axisLabel: { formatter: "{value}%", color: "#9ca3af", fontSize: 10 },
+      type: "value", minInterval: 1,
+      axisLabel: { color: "#9ca3af", fontSize: 10 },
       splitLine: { lineStyle: { color: "#f3f4f6" } },
     },
     series: [
       {
-        name: "Note 누락률",
+        name: "Note 누락",
         type: "bar",
-        data: chart2Data.map((p) => ({ value: pct(p.note_missing, p.oper_row_count), itemStyle: { color: "#fbbf24", borderRadius: [3, 3, 0, 0] } })),
-        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
+        data: chart2Data.map((p) => ({ value: p.note_missing, itemStyle: { color: "#fbbf24", borderRadius: [3, 3, 0, 0] } })),
+        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}건` : "" },
         barMaxWidth: 30,
       },
       {
-        name: "조건 누락률",
+        name: "조건 누락",
         type: "bar",
-        data: chart2Data.map((p) => ({ value: pct(p.cond_missing, p.oper_row_count), itemStyle: { color: "#f97316", borderRadius: [3, 3, 0, 0] } })),
-        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
+        data: chart2Data.map((p) => ({ value: p.cond_missing, itemStyle: { color: "#f97316", borderRadius: [3, 3, 0, 0] } })),
+        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}건` : "" },
         barMaxWidth: 30,
       },
     ],
@@ -394,8 +391,8 @@ export default function DBAnalysis() {
         {chart2Data.length > 0 && (
           <div className="bg-white border border-gray-200 rounded-lg p-4">
             <p className="text-xs font-semibold text-gray-600 mb-1">
-              OPER Row 불량률
-              <span className="font-normal text-gray-400 ml-1">(누락 행 / OPER_ID 있는 전체 행, 최대 불량률 높은 순)</span>
+              OPER Row 누락 건수 (Note / 조건)
+              <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 누락된 건수, 합산 많은 순)</span>
             </p>
             <ReactECharts option={chart2Option} style={{ height: 220 }} />
           </div>
