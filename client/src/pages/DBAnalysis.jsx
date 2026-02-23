@@ -248,7 +248,10 @@ export default function DBAnalysis() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {projectSummary.map((proj) => {
+            {[...projectSummary]
+              .filter((p) => p.experiment_count > 0)
+              .sort((a, b) => b.experiment_count - a.experiment_count)
+              .map((proj) => {
               const isSelected = selectedProject?.iacpj_nm === proj.iacpj_nm;
               const hasIssue = ISSUE_COLS.some((col) => proj[col.key] > 0);
               return (
