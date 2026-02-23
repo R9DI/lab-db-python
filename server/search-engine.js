@@ -90,8 +90,14 @@ class TfIdfSearchEngine {
   }
 
   _docToText(doc) {
+    const splits = doc._splits || [];
+    const splitParts = splits.flatMap(s => [
+      s.fac_id, s.oper_id, s.oper_nm, s.eps_lot_gbn_cd,
+      s.work_cond_desc, s.eqp_id, s.recipe_id, s.note,
+    ].filter(Boolean));
+
     return [
-      // 실험 필드
+      // 실험 필드 (전체)
       doc.iacpj_nm,
       doc.module,
       doc.eval_item,
@@ -100,6 +106,16 @@ class TfIdfSearchEngine {
       doc.requester,
       doc.lot_code,
       doc.plan_id,
+      doc.team,
+      doc.wf_direction,
+      doc.prev_eval,
+      doc.cross_experiment,
+      doc.lot_request,
+      doc.reference,
+      doc.volume_split,
+      doc.assign_wf,
+      doc.refdata,
+      doc.request_date,
       // 과제 필드 (중요도 높은 필드는 반복하여 가중치 부여)
       doc.project_purpose,
       doc.project_purpose,
@@ -115,6 +131,10 @@ class TfIdfSearchEngine {
       doc.ia_ta_grd_n,
       doc.iacpj_level,
       doc.iacpj_nud_n,
+      doc.iacpj_core_tec,
+      doc.ia_ch_or_n,
+      // 스플릿 필드 (전체)
+      ...splitParts,
     ].filter(Boolean).join(' ');
   }
 

@@ -49,13 +49,18 @@ function ensureIndex() {
       p.iacpj_tech_n, p.iacpj_mod_n as project_module,
       p.iacpj_tgt_n, p.iacpj_level,
       p.ia_tgt_htr_n, p.iacpj_nud_n,
-      p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n
+      p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n,
+      p.iacpj_core_tec, p.ia_ch_or_n
     FROM experiments e
     LEFT JOIN projects p ON e.iacpj_nm = p.iacpj_nm
   `,
     )
     .all();
-  engine.buildIndex(experiments);
+
+  const getSplits = db.prepare("SELECT fac_id, oper_id, oper_nm, eps_lot_gbn_cd, work_cond_desc, eqp_id, recipe_id, note FROM split_tables WHERE plan_id = ?");
+  const docs = experiments.map(exp => ({ ...exp, _splits: getSplits.all(exp.plan_id) }));
+
+  engine.buildIndex(docs);
   indexed = true;
 }
 

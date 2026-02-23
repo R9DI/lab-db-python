@@ -15,13 +15,18 @@ function ensureIndex() {
       p.iacpj_tech_n, p.iacpj_mod_n as project_module,
       p.iacpj_tgt_n, p.iacpj_level,
       p.ia_tgt_htr_n, p.iacpj_nud_n,
-      p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n
+      p.iacpj_itf_uno, p.iacpj_bgn_dy, p.iacpj_ch_n, p.ia_ta_grd_n,
+      p.iacpj_core_tec, p.ia_ch_or_n
     FROM experiments e
     LEFT JOIN projects p ON e.iacpj_nm = p.iacpj_nm
   `,
     )
     .all();
-  engine.buildIndex(experiments);
+
+  const getSplits = db.prepare("SELECT fac_id, oper_id, oper_nm, eps_lot_gbn_cd, work_cond_desc, eqp_id, recipe_id, note FROM split_tables WHERE plan_id = ?");
+  const docs = experiments.map(exp => ({ ...exp, _splits: getSplits.all(exp.plan_id) }));
+
+  engine.buildIndex(docs);
   indexed = true;
 }
 
@@ -66,21 +71,33 @@ function extractSuggestions(results, originalQuery) {
       { field: "평가아이템", text: exp.eval_item },
       { field: "모듈", text: exp.module },
       { field: "평가공정", text: exp.eval_process },
+      { field: "평가분류", text: exp.eval_category },
       { field: "과제", text: exp.iacpj_nm },
       { field: "Plan ID", text: exp.plan_id },
       { field: "LOT", text: exp.lot_code },
       { field: "요청자", text: exp.requester },
+      { field: "팀", text: exp.team },
+      { field: "WF방향", text: exp.wf_direction },
+      { field: "이전평가", text: exp.prev_eval },
+      { field: "참고", text: exp.reference },
       { field: "Tech", text: proj?.iacpj_tech_n },
       { field: "목표", text: proj?.iacpj_ta_goa },
       { field: "현황", text: proj?.iacpj_cur_stt },
+      { field: "목적", text: proj?.project_purpose },
+      { field: "개발분류", text: proj?.iacpj_tgt_n },
+      { field: "핵심기술", text: proj?.iacpj_core_tec },
+      { field: "NUDD", text: proj?.iacpj_nud_n },
     ];
 
     // Split table에서 차별화 키워드 추출
-    for (const s of splits.slice(0, 10)) {
+    for (const s of splits) {
+      if (s.fac_id) fieldTexts.push({ field: "FAB", text: s.fac_id });
+      if (s.oper_id) fieldTexts.push({ field: "OPER_ID", text: s.oper_id });
       if (s.oper_nm) fieldTexts.push({ field: "공정", text: s.oper_nm });
-      if (s.work_cond_desc)
-        fieldTexts.push({ field: "조건", text: s.work_cond_desc });
+      if (s.work_cond_desc) fieldTexts.push({ field: "조건", text: s.work_cond_desc });
       if (s.eqp_id) fieldTexts.push({ field: "장비", text: s.eqp_id });
+      if (s.recipe_id) fieldTexts.push({ field: "Recipe", text: s.recipe_id });
+      if (s.note) fieldTexts.push({ field: "Note", text: s.note });
     }
 
     for (const { field, text } of fieldTexts) {
