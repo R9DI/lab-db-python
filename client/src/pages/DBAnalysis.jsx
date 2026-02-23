@@ -17,11 +17,54 @@ const SEVERITY_CELL = {
   info:     "bg-blue-100 text-blue-700 font-semibold",
 };
 
+const SEVERITY_BORDER = {
+  critical: "border-red-200",
+  warning:  "border-amber-200",
+  info:     "border-blue-200",
+};
+
 function Badge({ count, severity }) {
   if (count === 0) return <span className="text-gray-300">—</span>;
-  return (
-    <span className={`px-2 py-0.5 rounded text-xs ${SEVERITY_CELL[severity]}`}>{count}</span>
-  );
+  return <span className={`px-2 py-0.5 rounded text-xs ${SEVERITY_CELL[severity]}`}>{count}</span>;
+}
+
+const pct = (num, den) => den > 0 ? Math.round((num / den) * 100) : 0;
+
+function shortName(name) {
+  if (!name) return "";
+  return name.length > 12 ? name.slice(0, 12) + "…" : name;
+}
+
+function makeBarOption({ data, valueKey, denomKey, title, color, colorFn, seriesLabel, tooltip }) {
+  const names = data.map((p) => shortName(p.iacpj_nm));
+  return {
+    tooltip: { trigger: "axis", formatter: tooltip },
+    grid: { left: 44, right: 16, top: 24, bottom: 70 },
+    xAxis: {
+      type: "category",
+      data: names,
+      axisLabel: { rotate: 35, fontSize: 10, interval: 0, color: "#6b7280" },
+      axisTick: { alignWithLabel: true },
+    },
+    yAxis: {
+      type: "value", min: 0, max: 100,
+      axisLabel: { formatter: "{value}%", color: "#9ca3af", fontSize: 10 },
+      splitLine: { lineStyle: { color: "#f3f4f6" } },
+    },
+    series: [{
+      name: seriesLabel,
+      type: "bar",
+      data: data.map((p) => ({
+        value: denomKey ? pct(p[valueKey], p[denomKey]) : p[valueKey],
+        itemStyle: { color: colorFn ? colorFn(p) : color, borderRadius: [3, 3, 0, 0] },
+      })),
+      label: {
+        show: true, position: "top", fontSize: 10, color: "#374151",
+        formatter: (v) => v.value > 0 ? `${v.value}${denomKey ? "%" : "건"}` : "",
+      },
+      barMaxWidth: 44,
+    }],
+  };
 }
 
 // 상세: Split 불량
@@ -141,6 +184,28 @@ function DetailLotMissing({ rows }) {
   );
 }
 
+// Accordion 섹션
+function AccordionSection({ label, severity, count, children }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`border rounded-lg overflow-hidden ${SEVERITY_BORDER[severity]}`}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-white hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-2 py-0.5 rounded font-semibold ${SEVERITY_CELL[severity]}`}>{count}건</span>
+          <span className="text-xs font-semibold text-gray-700">{label}</span>
+        </div>
+        <svg className={`w-3.5 h-3.5 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && <div className="px-3 py-3 border-t border-gray-100 bg-white">{children}</div>}
+    </div>
+  );
+}
+
 // 프로젝트 상세 패널
 function ProjectDetail({ project, issues }) {
   const proj = project.iacpj_nm;
@@ -161,19 +226,15 @@ function ProjectDetail({ project, issues }) {
   ].filter((s) => s.count > 0);
 
   if (sections.length === 0) {
-    return <p className="text-xs text-emerald-600 py-2">이슈 없음</p>;
+    return <p className="text-xs text-emerald-600 py-1">이슈 없음</p>;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {sections.map((s) => (
-        <div key={s.label}>
-          <div className="flex items-center gap-2 mb-2">
-            <span className={`text-xs px-2 py-0.5 rounded font-semibold ${SEVERITY_CELL[s.severity]}`}>{s.count}건</span>
-            <span className="text-xs font-semibold text-gray-700">{s.label}</span>
-          </div>
+        <AccordionSection key={s.label} label={s.label} severity={s.severity} count={s.count}>
           {s.content}
-        </div>
+        </AccordionSection>
       ))}
     </div>
   );
@@ -198,100 +259,96 @@ export default function DBAnalysis() {
   const splitCoverage = summary.total_experiments > 0
     ? Math.round((summary.experiments_with_split / summary.total_experiments) * 100)
     : 0;
-
   const totalIssues = Object.values(issues).flat().length;
 
   const handleRowClick = (proj) => {
     setSelectedProject((prev) => prev?.iacpj_nm === proj.iacpj_nm ? null : proj);
   };
 
-  // 차트용 데이터 (실험 1건 이상, 실험수 많은 순)
-  const chartProjects = [...projectSummary]
+  // 차트 1: Split 미작성률 — % 높은 순
+  const chart1Data = [...projectSummary]
     .filter((p) => p.experiment_count > 0)
-    .sort((a, b) => b.experiment_count - a.experiment_count);
+    .sort((a, b) => pct(b.split_poor, b.experiment_count) - pct(a.split_poor, a.experiment_count));
 
-  const projNames = chartProjects.map((p) => {
-    const name = p.iacpj_nm || "";
-    return name.length > 10 ? name.slice(0, 10) + "…" : name;
+  const chart1Option = makeBarOption({
+    data: chart1Data,
+    valueKey: "split_poor",
+    denomKey: "experiment_count",
+    color: null,
+    colorFn: (p) => pct(p.split_poor, p.experiment_count) === 0 ? "#86efac" : "#f87171",
+    seriesLabel: "Split 미작성률",
+    tooltip: (params) => {
+      const p = chart1Data[params[0].dataIndex];
+      return `${p.iacpj_nm}<br/>Split 불량: ${p.split_poor}/${p.experiment_count}건 (${params[0].value}%)`;
+    },
   });
 
-  const pct = (num, den) => den > 0 ? Math.round((num / den) * 100) : 0;
+  // 차트 2: OPER Row 불량률 — OPER 행 있는 과제만, 최대 불량률 높은 순
+  const chart2Data = [...projectSummary]
+    .filter((p) => p.oper_row_count > 0)
+    .sort((a, b) =>
+      Math.max(pct(b.note_missing, b.oper_row_count), pct(b.cond_missing, b.oper_row_count)) -
+      Math.max(pct(a.note_missing, a.oper_row_count), pct(a.cond_missing, a.oper_row_count))
+    );
+  const chart2Names = chart2Data.map((p) => shortName(p.iacpj_nm));
 
-  // Chart 1: Split 미작성률 (split_poor / experiment_count)
-  const chart1Option = {
-    tooltip: {
-      trigger: "axis",
-      formatter: (params) => {
-        const p = chartProjects[params[0].dataIndex];
-        return `${p.iacpj_nm}<br/>Split 불량: ${p.split_poor}/${p.experiment_count}건 (${params[0].value}%)`;
-      },
-    },
-    grid: { left: 40, right: 20, top: 20, bottom: 60 },
-    xAxis: {
-      type: "category",
-      data: projNames,
-      axisLabel: { rotate: 35, fontSize: 10, interval: 0 },
-    },
-    yAxis: {
-      type: "value", min: 0, max: 100,
-      axisLabel: { formatter: "{value}%" },
-    },
-    series: [{
-      type: "bar",
-      data: chartProjects.map((p) => ({
-        value: pct(p.split_poor, p.experiment_count),
-        itemStyle: {
-          color: pct(p.split_poor, p.experiment_count) === 0 ? "#86efac" : "#f87171",
-        },
-      })),
-      label: { show: true, position: "top", fontSize: 10, formatter: "{c}%" },
-      barMaxWidth: 40,
-    }],
-  };
-
-  // Chart 2: OPER Row 불량률 (note/조건 누락 / oper_row_count)
   const chart2Option = {
     tooltip: {
       trigger: "axis",
       formatter: (params) => {
-        const p = chartProjects[params[0].dataIndex];
+        const p = chart2Data[params[0].dataIndex];
         const lines = [`${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)`];
-        params.forEach((param) => {
-          lines.push(`${param.seriesName}: ${param.value}%`);
-        });
+        params.forEach((param) => { lines.push(`${param.seriesName}: ${param.value}%`); });
         return lines.join("<br/>");
       },
     },
-    legend: { top: 0, data: ["Note 누락률", "조건 누락률"], textStyle: { fontSize: 11 } },
-    grid: { left: 40, right: 20, top: 30, bottom: 60 },
+    legend: { top: 2, right: 16, data: ["Note 누락률", "조건 누락률"], textStyle: { fontSize: 11 } },
+    grid: { left: 44, right: 16, top: 32, bottom: 70 },
     xAxis: {
       type: "category",
-      data: projNames,
-      axisLabel: { rotate: 35, fontSize: 10, interval: 0 },
+      data: chart2Names,
+      axisLabel: { rotate: 35, fontSize: 10, interval: 0, color: "#6b7280" },
+      axisTick: { alignWithLabel: true },
     },
     yAxis: {
       type: "value", min: 0, max: 100,
-      axisLabel: { formatter: "{value}%" },
+      axisLabel: { formatter: "{value}%", color: "#9ca3af", fontSize: 10 },
+      splitLine: { lineStyle: { color: "#f3f4f6" } },
     },
     series: [
       {
         name: "Note 누락률",
         type: "bar",
-        data: chartProjects.map((p) => pct(p.note_missing, p.oper_row_count)),
-        itemStyle: { color: "#fbbf24" },
-        label: { show: true, position: "top", fontSize: 9, formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
+        data: chart2Data.map((p) => ({ value: pct(p.note_missing, p.oper_row_count), itemStyle: { color: "#fbbf24", borderRadius: [3, 3, 0, 0] } })),
+        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
         barMaxWidth: 30,
       },
       {
         name: "조건 누락률",
         type: "bar",
-        data: chartProjects.map((p) => pct(p.cond_missing, p.oper_row_count)),
-        itemStyle: { color: "#f97316" },
-        label: { show: true, position: "top", fontSize: 9, formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
+        data: chart2Data.map((p) => ({ value: pct(p.cond_missing, p.oper_row_count), itemStyle: { color: "#f97316", borderRadius: [3, 3, 0, 0] } })),
+        label: { show: true, position: "top", fontSize: 9, color: "#374151", formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
         barMaxWidth: 30,
       },
     ],
   };
+
+  // 차트 3: 평가아이템 중복 건수 — 중복 건수 높은 순
+  const chart3Data = [...projectSummary]
+    .filter((p) => p.dup_eval > 0)
+    .sort((a, b) => b.dup_eval - a.dup_eval);
+
+  const chart3Option = makeBarOption({
+    data: chart3Data,
+    valueKey: "dup_eval",
+    denomKey: null,
+    color: "#a78bfa",
+    seriesLabel: "중복 건수",
+    tooltip: (params) => {
+      const p = chart3Data[params[0].dataIndex];
+      return `${p.iacpj_nm}<br/>평가아이템 중복: ${p.dup_eval}건`;
+    },
+  });
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -324,16 +381,35 @@ export default function DBAnalysis() {
         ))}
       </div>
 
-      {/* 차트 */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* 차트 — 각각 전체 폭 한 행 */}
+      <div className="space-y-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs font-semibold text-gray-600 mb-3">Split Table 미작성률 <span className="font-normal text-gray-400">(불량 실험 / 전체 실험)</span></p>
-          <ReactECharts option={chart1Option} style={{ height: 240 }} />
+          <p className="text-xs font-semibold text-gray-600 mb-1">
+            Split Table 미작성률
+            <span className="font-normal text-gray-400 ml-1">(불량 실험 / 전체 실험, % 높은 순)</span>
+          </p>
+          <ReactECharts option={chart1Option} style={{ height: 220 }} />
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs font-semibold text-gray-600 mb-3">OPER Row 불량률 <span className="font-normal text-gray-400">(누락 행 / OPER_ID 있는 전체 행)</span></p>
-          <ReactECharts option={chart2Option} style={{ height: 240 }} />
-        </div>
+
+        {chart2Data.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-xs font-semibold text-gray-600 mb-1">
+              OPER Row 불량률
+              <span className="font-normal text-gray-400 ml-1">(누락 행 / OPER_ID 있는 전체 행, 최대 불량률 높은 순)</span>
+            </p>
+            <ReactECharts option={chart2Option} style={{ height: 220 }} />
+          </div>
+        )}
+
+        {chart3Data.length > 0 && (
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <p className="text-xs font-semibold text-gray-600 mb-1">
+              평가아이템 중복 건수
+              <span className="font-normal text-gray-400 ml-1">(과제 내 동일 eval_item이 여러 실험에 사용된 경우)</span>
+            </p>
+            <ReactECharts option={chart3Option} style={{ height: 220 }} />
+          </div>
+        )}
       </div>
 
       {/* 과제별 이슈 테이블 */}
@@ -353,43 +429,43 @@ export default function DBAnalysis() {
               .filter((p) => p.experiment_count > 0)
               .sort((a, b) => b.experiment_count - a.experiment_count)
               .map((proj) => {
-              const isSelected = selectedProject?.iacpj_nm === proj.iacpj_nm;
-              const hasIssue = ISSUE_COLS.some((col) => proj[col.key] > 0);
-              return (
-                <>
-                  <tr
-                    key={proj.iacpj_nm}
-                    onClick={() => handleRowClick(proj)}
-                    className={`cursor-pointer transition-colors ${
-                      isSelected ? "bg-indigo-50" : hasIssue ? "hover:bg-gray-50" : "hover:bg-gray-50 opacity-60"
-                    }`}
-                  >
-                    <td className="px-4 py-3 text-sm font-medium text-gray-800 max-w-[260px] truncate" title={proj.iacpj_nm}>
-                      <span className="flex items-center gap-2">
-                        {isSelected
-                          ? <svg className="w-3 h-3 text-indigo-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                          : <svg className="w-3 h-3 text-gray-300 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
-                        }
-                        {proj.iacpj_nm}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-center text-gray-600">{proj.experiment_count}</td>
-                    {ISSUE_COLS.map((col) => (
-                      <td key={col.key} className="px-3 py-3 text-center">
-                        <Badge count={proj[col.key]} severity={col.severity} />
+                const isSelected = selectedProject?.iacpj_nm === proj.iacpj_nm;
+                const hasIssue = ISSUE_COLS.some((col) => proj[col.key] > 0);
+                return (
+                  <>
+                    <tr
+                      key={proj.iacpj_nm}
+                      onClick={() => handleRowClick(proj)}
+                      className={`cursor-pointer transition-colors ${
+                        isSelected ? "bg-indigo-50" : hasIssue ? "hover:bg-gray-50" : "hover:bg-gray-50 opacity-60"
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-sm font-medium text-gray-800 max-w-[260px] truncate" title={proj.iacpj_nm}>
+                        <span className="flex items-center gap-2">
+                          {isSelected
+                            ? <svg className="w-3 h-3 text-indigo-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
+                            : <svg className="w-3 h-3 text-gray-300 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" /></svg>
+                          }
+                          {proj.iacpj_nm}
+                        </span>
                       </td>
-                    ))}
-                  </tr>
-                  {isSelected && (
-                    <tr key={`${proj.iacpj_nm}-detail`}>
-                      <td colSpan={2 + ISSUE_COLS.length} className="px-6 py-4 bg-indigo-50 border-t border-indigo-100">
-                        <ProjectDetail project={proj} issues={issues} />
-                      </td>
+                      <td className="px-3 py-3 text-center text-gray-600">{proj.experiment_count}</td>
+                      {ISSUE_COLS.map((col) => (
+                        <td key={col.key} className="px-3 py-3 text-center">
+                          <Badge count={proj[col.key]} severity={col.severity} />
+                        </td>
+                      ))}
                     </tr>
-                  )}
-                </>
-              );
-            })}
+                    {isSelected && (
+                      <tr key={`${proj.iacpj_nm}-detail`}>
+                        <td colSpan={2 + ISSUE_COLS.length} className="px-6 py-4 bg-indigo-50 border-t border-indigo-100">
+                          <ProjectDetail project={proj} issues={issues} />
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
           </tbody>
         </table>
       </div>
