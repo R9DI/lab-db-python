@@ -19,19 +19,24 @@ function Search() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get("/api/experiments").then((res) => {
-      const exps = res.data;
-      if (exps.length === 0) return;
-      const shuffled = [...exps].sort(() => Math.random() - 0.5).slice(0, 6);
-      const suggestions = shuffled.map((e) => ({
-        keyword: e.eval_process || e.eval_item || e.iacpj_nm,
-        context: "시작 추천",
-      })).filter((s) => s.keyword);
-      setMessages((prev) => {
-        const first = { ...prev[0], suggestions };
-        return [first, ...prev.slice(1)];
-      });
-    }).catch(() => {});
+    axios
+      .get("/api/experiments")
+      .then((res) => {
+        const exps = res.data;
+        if (exps.length === 0) return;
+        const shuffled = [...exps].sort(() => Math.random() - 0.5).slice(0, 6);
+        const suggestions = shuffled
+          .map((e) => ({
+            keyword: e.eval_process || e.eval_item || e.iacpj_nm,
+            context: "시작 추천",
+          }))
+          .filter((s) => s.keyword);
+        setMessages((prev) => {
+          const first = { ...prev[0], suggestions };
+          return [first, ...prev.slice(1)];
+        });
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

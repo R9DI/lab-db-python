@@ -10,6 +10,7 @@ import LLMSearch from "./pages/LLMSearch";
 import LLMNewExperiment from "./pages/LLMNewExperiment";
 import HomePage from "./pages/HomePage";
 import DBAnalysis from "./pages/DBAnalysis";
+import AgentDemo from "./pages/AgentDemo";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
@@ -22,6 +23,7 @@ const planSubPages = [
   { to: "/llm-search", label: "실험 탐색(w AI)" },
   { to: "/new-experiment", label: "신규 실험" },
   { to: "/llm-new-experiment", label: "신규 실험(w AI)" },
+  { to: "/agent-demo", label: "신규실험 (w Agent Demo)" },
   { to: "/lot-assign", label: "Lot Assign" },
 ];
 
@@ -135,6 +137,7 @@ function App() {
           <Route path="/lot-assign" element={<LotAssign />} />
           <Route path="/progress" element={<ExperimentProgress />} />
           <Route path="/db-analysis" element={<DBAnalysis />} />
+          <Route path="/agent-demo" element={<AgentDemo />} />
         </Routes>
       </main>
     </div>

@@ -13,16 +13,18 @@ const SPLIT_COLORS = {
 };
 const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
 
-const getSplitColor = (val) => SPLIT_COLORS[val?.toLowerCase()] || DEFAULT_SPLIT;
+const getSplitColor = (val) =>
+  SPLIT_COLORS[val?.toLowerCase()] || DEFAULT_SPLIT;
 
 function SplitTable({ splits }) {
   if (!splits || splits.length === 0) return null;
 
-  // WF 컬럼 1~25 항상 표시
+  // WF 컬럼 1~25 항상 표시ㄹ
   const wfCols = useMemo(() => {
     const cols = [];
     for (let i = 1; i <= 25; i++) {
       const key = `user_def_val_${i}`;
+      ㄹ;
       cols.push({
         headerName: `${i}`,
         field: key,
@@ -45,7 +47,7 @@ function SplitTable({ splits }) {
     () => [
       {
         headerName: "SNO",
-        field: "sno",
+        field: "#",
         width: 60,
         cellStyle: { textAlign: "center" },
       },
