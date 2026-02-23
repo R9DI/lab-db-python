@@ -28,25 +28,31 @@ router.get("/", (req, res) => {
     ORDER BY iacpj_nm
   `).all();
 
-  // 3. OPER_ID 있는데 Note 누락
+  // 3. OPER_ID 있는데 Note 누락 (같은 plan_id+oper_id 중 하나라도 note 있으면 정상)
   const noteMissing = db.prepare(`
-    SELECT st.plan_id, st.oper_id, st.oper_nm, st.note,
+    SELECT st.plan_id, st.oper_id,
+           MAX(st.oper_nm) AS oper_nm,
+           MAX(st.note) AS note,
            e.iacpj_nm, e.eval_item, e.lot_code
     FROM split_tables st
     JOIN experiments e ON st.plan_id = e.plan_id
     WHERE st.oper_id IS NOT NULL AND TRIM(st.oper_id) != ''
-      AND (st.note IS NULL OR TRIM(st.note) = '')
+    GROUP BY st.plan_id, st.oper_id, e.iacpj_nm, e.eval_item, e.lot_code
+    HAVING MAX(CASE WHEN st.note IS NOT NULL AND TRIM(st.note) != '' THEN 1 ELSE 0 END) = 0
     ORDER BY e.iacpj_nm, st.plan_id
   `).all();
 
-  // 4. OPER_ID 있는데 조건(work_cond_desc) 누락
+  // 4. OPER_ID 있는데 조건(work_cond_desc) 누락 (같은 plan_id+oper_id 중 하나라도 조건 있으면 정상)
   const condMissing = db.prepare(`
-    SELECT st.plan_id, st.oper_id, st.oper_nm, st.work_cond_desc,
+    SELECT st.plan_id, st.oper_id,
+           MAX(st.oper_nm) AS oper_nm,
+           MAX(st.work_cond_desc) AS work_cond_desc,
            e.iacpj_nm, e.eval_item, e.lot_code
     FROM split_tables st
     JOIN experiments e ON st.plan_id = e.plan_id
     WHERE st.oper_id IS NOT NULL AND TRIM(st.oper_id) != ''
-      AND (st.work_cond_desc IS NULL OR TRIM(st.work_cond_desc) = '')
+    GROUP BY st.plan_id, st.oper_id, e.iacpj_nm, e.eval_item, e.lot_code
+    HAVING MAX(CASE WHEN st.work_cond_desc IS NOT NULL AND TRIM(st.work_cond_desc) != '' THEN 1 ELSE 0 END) = 0
     ORDER BY e.iacpj_nm, st.plan_id
   `).all();
 
@@ -93,9 +99,9 @@ router.get("/", (req, res) => {
     ORDER BY p.iacpj_nm
   `).all();
 
-  // OPER_ID가 있는 split row 수 (과제별 분모용)
+  // OPER_ID가 있는 (plan_id, oper_id) 고유 쌍 수 (과제별 분모용)
   const operRowCounts = db.prepare(`
-    SELECT ex.iacpj_nm, COUNT(*) AS oper_row_count
+    SELECT ex.iacpj_nm, COUNT(DISTINCT st.plan_id || '|' || st.oper_id) AS oper_row_count
     FROM split_tables st
     JOIN experiments ex ON st.plan_id = ex.plan_id
     WHERE st.oper_id IS NOT NULL AND TRIM(st.oper_id) != ''
