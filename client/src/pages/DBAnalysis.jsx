@@ -35,11 +35,18 @@ function shortName(name) {
   return name.length > 12 ? name.slice(0, 12) + "…" : name;
 }
 
-function makeBarOption({ data, valueKey, denomKey, title, color, colorFn, seriesLabel, tooltip }) {
+function avgPct(data, valueKey, denomKey) {
+  if (!data.length) return 0;
+  const totalNum = data.reduce((s, p) => s + (p[valueKey] || 0), 0);
+  const totalDen = data.reduce((s, p) => s + (p[denomKey] || 0), 0);
+  return pct(totalNum, totalDen);
+}
+
+function makeBarOption({ data, valueKey, denomKey, color, colorFn, seriesLabel, tooltip, avg }) {
   const names = data.map((p) => shortName(p.iacpj_nm));
   return {
     tooltip: { trigger: "axis", formatter: tooltip },
-    grid: { left: 44, right: 16, top: 24, bottom: 70 },
+    grid: { left: 44, right: 60, top: 24, bottom: 70 },
     xAxis: {
       type: "category",
       data: names,
@@ -60,9 +67,16 @@ function makeBarOption({ data, valueKey, denomKey, title, color, colorFn, series
       })),
       label: {
         show: true, position: "top", fontSize: 10, color: "#374151",
-        formatter: (v) => v.value > 0 ? `${v.value}${denomKey ? "%" : "건"}` : "",
+        formatter: (v) => v.value > 0 ? `${v.value}%` : "",
       },
       barMaxWidth: 44,
+      markLine: avg != null ? {
+        silent: true,
+        symbol: "none",
+        lineStyle: { color: "#6366f1", type: "dashed", width: 1.5 },
+        label: { formatter: `평균 ${avg}%`, position: "end", color: "#6366f1", fontSize: 10, fontWeight: "bold" },
+        data: [{ yAxis: avg }],
+      } : undefined,
     }],
   };
 }
@@ -277,15 +291,16 @@ export default function DBAnalysis() {
     color: null,
     colorFn: (p) => pct(p.split_poor, p.experiment_count) === 0 ? "#86efac" : "#f87171",
     seriesLabel: "Split 미작성률",
+    avg: avgPct(chart1Data, "split_poor", "experiment_count"),
     tooltip: (params) => {
       const p = chart1Data[params[0].dataIndex];
-      return `${p.iacpj_nm}<br/>Split 불량: ${p.split_poor}/${p.experiment_count}건 (${params[0].value}%)`;
+      return `${p.iacpj_nm}<br/>전체 ${p.experiment_count}건 중 Split 불량 ${p.split_poor}건 (${params[0].value}%)`;
     },
   });
 
-  // 차트 2a: Note 누락률 — note 있는 과제만, % 높은 순
+  // 차트 2a: Note 누락률 — OPER행 있는 과제 전체, % 높은 순
   const chart2aData = [...projectSummary]
-    .filter((p) => p.note_missing > 0)
+    .filter((p) => p.oper_row_count > 0)
     .sort((a, b) => pct(b.note_missing, b.oper_row_count) - pct(a.note_missing, a.oper_row_count));
 
   const chart2aOption = makeBarOption({
@@ -293,17 +308,18 @@ export default function DBAnalysis() {
     valueKey: "note_missing",
     denomKey: "oper_row_count",
     color: null,
-    colorFn: () => "#fbbf24",
+    colorFn: (p) => pct(p.note_missing, p.oper_row_count) === 0 ? "#86efac" : "#fbbf24",
     seriesLabel: "Note 누락률",
+    avg: avgPct(chart2aData, "note_missing", "oper_row_count"),
     tooltip: (params) => {
       const p = chart2aData[params[0].dataIndex];
-      return `${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)<br/>Note 누락: ${p.note_missing}건 (${params[0].value}%)`;
+      return `${p.iacpj_nm}<br/>OPER행 ${p.oper_row_count}건 중 Note 누락 ${p.note_missing}건 (${params[0].value}%)`;
     },
   });
 
-  // 차트 2b: 조건 누락률 — cond 있는 과제만, % 높은 순
+  // 차트 2b: 조건 누락률 — OPER행 있는 과제 전체, % 높은 순
   const chart2bData = [...projectSummary]
-    .filter((p) => p.cond_missing > 0)
+    .filter((p) => p.oper_row_count > 0)
     .sort((a, b) => pct(b.cond_missing, b.oper_row_count) - pct(a.cond_missing, a.oper_row_count));
 
   const chart2bOption = makeBarOption({
@@ -311,28 +327,31 @@ export default function DBAnalysis() {
     valueKey: "cond_missing",
     denomKey: "oper_row_count",
     color: null,
-    colorFn: () => "#f97316",
+    colorFn: (p) => pct(p.cond_missing, p.oper_row_count) === 0 ? "#86efac" : "#f97316",
     seriesLabel: "조건 누락률",
+    avg: avgPct(chart2bData, "cond_missing", "oper_row_count"),
     tooltip: (params) => {
       const p = chart2bData[params[0].dataIndex];
-      return `${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)<br/>조건 누락: ${p.cond_missing}건 (${params[0].value}%)`;
+      return `${p.iacpj_nm}<br/>OPER행 ${p.oper_row_count}건 중 조건 누락 ${p.cond_missing}건 (${params[0].value}%)`;
     },
   });
 
-  // 차트 3: 평가아이템 중복 건수 — 중복 건수 높은 순
+  // 차트 3: 평가아이템 중복률 — 전체 실험 대비 %, % 높은 순
   const chart3Data = [...projectSummary]
-    .filter((p) => p.dup_eval > 0)
-    .sort((a, b) => b.dup_eval - a.dup_eval);
+    .filter((p) => p.experiment_count > 0)
+    .sort((a, b) => pct(b.dup_eval, b.experiment_count) - pct(a.dup_eval, a.experiment_count));
 
   const chart3Option = makeBarOption({
     data: chart3Data,
     valueKey: "dup_eval",
-    denomKey: null,
-    color: "#a78bfa",
-    seriesLabel: "중복 건수",
+    denomKey: "experiment_count",
+    color: null,
+    colorFn: (p) => pct(p.dup_eval, p.experiment_count) === 0 ? "#86efac" : "#a78bfa",
+    seriesLabel: "중복률",
+    avg: avgPct(chart3Data, "dup_eval", "experiment_count"),
     tooltip: (params) => {
       const p = chart3Data[params[0].dataIndex];
-      return `${p.iacpj_nm}<br/>평가아이템 중복: ${p.dup_eval}건`;
+      return `${p.iacpj_nm}<br/>전체 ${p.experiment_count}건 중 평가아이템 중복 ${p.dup_eval}건 (${params[0].value}%)`;
     },
   });
 
@@ -377,35 +396,29 @@ export default function DBAnalysis() {
           <ReactECharts option={chart1Option} style={{ height: 220 }} />
         </div>
 
-        {chart2aData.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-xs font-semibold text-gray-600 mb-1">
-              Note 누락률
-              <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 Note 누락 %, 높은 순)</span>
-            </p>
-            <ReactECharts option={chart2aOption} style={{ height: 220 }} />
-          </div>
-        )}
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-gray-600 mb-1">
+            Note 누락률
+            <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 Note 누락 %, 높은 순)</span>
+          </p>
+          <ReactECharts option={chart2aOption} style={{ height: 220 }} />
+        </div>
 
-        {chart2bData.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-xs font-semibold text-gray-600 mb-1">
-              조건 누락률
-              <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 작업조건 누락 %, 높은 순)</span>
-            </p>
-            <ReactECharts option={chart2bOption} style={{ height: 220 }} />
-          </div>
-        )}
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-gray-600 mb-1">
+            조건 누락률
+            <span className="font-normal text-gray-400 ml-1">(OPER_ID 있는 행 중 작업조건 누락 %, 높은 순)</span>
+          </p>
+          <ReactECharts option={chart2bOption} style={{ height: 220 }} />
+        </div>
 
-        {chart3Data.length > 0 && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <p className="text-xs font-semibold text-gray-600 mb-1">
-              평가아이템 중복 건수
-              <span className="font-normal text-gray-400 ml-1">(과제 내 동일 eval_item이 여러 실험에 사용된 경우)</span>
-            </p>
-            <ReactECharts option={chart3Option} style={{ height: 220 }} />
-          </div>
-        )}
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-gray-600 mb-1">
+            평가아이템 중복률
+            <span className="font-normal text-gray-400 ml-1">(중복 아이템 / 전체 실험, % 높은 순)</span>
+          </p>
+          <ReactECharts option={chart3Option} style={{ height: 220 }} />
+        </div>
       </div>
 
       {/* 과제별 이슈 테이블 */}
