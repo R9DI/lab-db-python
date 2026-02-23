@@ -263,8 +263,8 @@ router.post("/", (req, res) => {
     return queryTokens.every((token) => docText.includes(token));
   });
 
-  // AND 필터 결과가 있으면 사용, 없으면 원래 결과 유지 (너무 엄격해지는 것 방지)
-  const finalResults = filtered.length > 0 ? filtered : enriched;
+  // 입력한 키워드를 모두 포함하는 결과만 반환 (엄격한 AND 필터)
+  const finalResults = filtered;
 
   const summary = generateSummary(finalResults, query);
   const suggestions = extractSuggestions(finalResults, query);

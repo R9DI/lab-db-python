@@ -246,7 +246,7 @@ router.post("/", async (req, res) => {
     const docText = engine._docToText(r.experiment).toLowerCase();
     return queryTokens.every((token) => docText.includes(token));
   });
-  const finalResults = filtered.length > 0 ? filtered : enriched;
+  const finalResults = filtered;
 
   // LLM 설정 확인
   const config = getConfig();
