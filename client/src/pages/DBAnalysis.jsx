@@ -3,12 +3,12 @@ import axios from "axios";
 import ReactECharts from "echarts-for-react";
 
 const ISSUE_COLS = [
-  { key: "split_poor",    label: "Split 불량",      severity: "critical" },
-  { key: "dup_eval",      label: "평가아이템 중복",  severity: "warning"  },
-  { key: "note_missing",  label: "Note 누락",        severity: "warning"  },
-  { key: "cond_missing",  label: "조건 누락",        severity: "warning"  },
-  { key: "field_missing", label: "핵심필드 누락",    severity: "warning"  },
-  { key: "lot_missing",   label: "LOT 누락",         severity: "info"     },
+  { key: "split_poor",    label: "Split 불량",      severity: "critical", denomKey: "experiment_count" },
+  { key: "dup_eval",      label: "평가아이템 중복",  severity: "warning",  denomKey: "experiment_count" },
+  { key: "note_missing",  label: "Note 누락",        severity: "warning",  denomKey: "oper_row_count"   },
+  { key: "cond_missing",  label: "조건 누락",        severity: "warning",  denomKey: "oper_row_count"   },
+  { key: "field_missing", label: "핵심필드 누락",    severity: "warning",  denomKey: "experiment_count" },
+  { key: "lot_missing",   label: "LOT 누락",         severity: "info",     denomKey: "experiment_count" },
 ];
 
 const SEVERITY_CELL = {
@@ -23,9 +23,14 @@ const SEVERITY_BORDER = {
   info:     "border-blue-200",
 };
 
-function Badge({ count, severity }) {
-  if (count === 0) return <span className="text-gray-300">—</span>;
-  return <span className={`px-2 py-0.5 rounded text-xs ${SEVERITY_CELL[severity]}`}>{count}</span>;
+function Badge({ count, denom, severity }) {
+  if (count === 0) return <span className="text-gray-300 text-xs">{denom > 0 ? `0%` : "—"}</span>;
+  const p = pct(count, denom);
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs ${SEVERITY_CELL[severity]}`}>
+      {count}/{denom}건 ({p}%)
+    </span>
+  );
 }
 
 const pct = (num, den) => den > 0 ? Math.round((num / den) * 100) : 0;
@@ -461,7 +466,7 @@ export default function DBAnalysis() {
                       <td className="px-3 py-3 text-center text-gray-600">{proj.experiment_count}</td>
                       {ISSUE_COLS.map((col) => (
                         <td key={col.key} className="px-3 py-3 text-center">
-                          <Badge count={proj[col.key]} severity={col.severity} />
+                          <Badge count={proj[col.key]} denom={proj[col.denomKey] || 0} severity={col.severity} />
                         </td>
                       ))}
                     </tr>

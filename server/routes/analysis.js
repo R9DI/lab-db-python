@@ -15,18 +15,41 @@ router.get("/", (req, res) => {
     ORDER BY e.iacpj_nm, e.plan_id
   `).all();
 
-  // 2. 평가아이템 중복 (같은 과제 내 eval_item 동일)
-  const dupEvalItem = db.prepare(`
-    SELECT iacpj_nm, eval_item, eval_process,
-           COUNT(*) AS dup_count,
-           GROUP_CONCAT(plan_id, ', ') AS plan_ids,
-           GROUP_CONCAT(COALESCE(lot_code, '-'), ', ') AS lot_codes
+  // 2. 평가아이템 중복 (같은 과제 내 — 정규화 후 동일한 경우)
+  // 정규화: 소문자 + 공백/특수문자 제거 + 어미/조사 제거
+  const PARTICLES = ['에서','으로','이나','이랑','에게','한테','까지','부터','에','로','와','과','를','을','는','은','의','가','이','도','만','나','랑'];
+  function normalizeItem(text) {
+    if (!text) return '';
+    let s = text.toLowerCase().trim().replace(/[\s\-_.,()[\]/:;·•*@#!?~`'"]+/g, '');
+    for (const p of PARTICLES) {
+      if (s.endsWith(p) && s.length > p.length) { s = s.slice(0, s.length - p.length); break; }
+    }
+    return s;
+  }
+
+  const allExpItems = db.prepare(`
+    SELECT plan_id, iacpj_nm, eval_item, eval_process, lot_code
     FROM experiments
     WHERE eval_item IS NOT NULL AND TRIM(eval_item) != ''
-    GROUP BY iacpj_nm, eval_item
-    HAVING COUNT(*) > 1
-    ORDER BY iacpj_nm
   `).all();
+
+  const evalGroups = {};
+  for (const exp of allExpItems) {
+    const key = `${exp.iacpj_nm}|||${normalizeItem(exp.eval_item)}`;
+    if (!evalGroups[key]) evalGroups[key] = [];
+    evalGroups[key].push(exp);
+  }
+  const dupEvalItem = Object.values(evalGroups)
+    .filter(g => g.length > 1)
+    .map(g => ({
+      iacpj_nm: g[0].iacpj_nm,
+      eval_item: g.map(i => i.eval_item).filter((v, i, a) => a.indexOf(v) === i).join(' / '),
+      eval_process: g[0].eval_process,
+      dup_count: g.length,
+      plan_ids: g.map(i => i.plan_id).join(', '),
+      lot_codes: g.map(i => i.lot_code || '-').join(', '),
+    }))
+    .sort((a, b) => a.iacpj_nm.localeCompare(b.iacpj_nm));
 
   // 3. OPER_ID 있는데 Note 누락 (같은 plan_id+oper_id 중 하나라도 note 있으면 정상)
   const noteMissing = db.prepare(`
