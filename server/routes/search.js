@@ -253,9 +253,38 @@ router.post("/", (req, res) => {
 
   const { quotedTerms, normalQuery } = parseQuery(query);
 
-  const results = engine.search(query, topK);
+  // 따옴표 포함 시 전체 인덱스 스캔 (TF-IDF topK 제한 우회)
+  let candidates;
+  if (quotedTerms.length > 0) {
+    const exactMatched = engine.documents.filter((doc) => {
+      const docTokenSet = new Set(engine.tokenize(engine._docToText(doc)));
+      return quotedTerms.every((phrase) =>
+        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
+      );
+    });
+    if (normalQuery) {
+      // 일반 키워드도 있으면 TF-IDF 점수로 정렬
+      const tfidfResults = engine.search(normalQuery, engine.documents.length);
+      const scoreMap = new Map(tfidfResults.map((r) => [r.document, r.score]));
+      candidates = exactMatched
+        .map((doc) => ({ score: scoreMap.get(doc) || 0, document: doc }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, topK);
+    } else {
+      candidates = exactMatched.slice(0, topK).map((doc) => ({ score: 1, document: doc }));
+    }
+  } else {
+    // 일반 TF-IDF 검색
+    const tfidfResults = engine.search(query, topK);
+    const queryTokens = engine.tokenize(query);
+    const andFiltered = tfidfResults.filter((r) => {
+      const docText = engine._docToText(r.document).toLowerCase();
+      return queryTokens.every((t) => docText.includes(t));
+    });
+    candidates = andFiltered.length > 0 ? andFiltered : tfidfResults;
+  }
 
-  const enriched = results.map((r) => {
+  const enriched = candidates.map((r) => {
     const splits = db
       .prepare("SELECT * FROM split_tables WHERE plan_id = ?")
       .all(r.document.plan_id);
@@ -270,23 +299,7 @@ router.post("/", (req, res) => {
     };
   });
 
-  // 일반 키워드 AND 필터 (결과 없으면 폴백)
-  const queryTokens = engine.tokenize(normalQuery || query);
-  const andFiltered = enriched.filter((r) => {
-    const docText = engine._docToText(r.experiment).toLowerCase();
-    return queryTokens.every((token) => docText.includes(token));
-  });
-  let finalResults = andFiltered.length > 0 ? andFiltered : enriched;
-
-  // "따옴표" 정확 매칭 필터 (엄격 적용, 폴백 없음)
-  if (quotedTerms.length > 0) {
-    finalResults = finalResults.filter((r) => {
-      const docTokenSet = new Set(engine.tokenize(engine._docToText(r.experiment)));
-      return quotedTerms.every((phrase) =>
-        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
-      );
-    });
-  }
+  const finalResults = enriched;
 
   const summary = generateSummary(finalResults, query);
   const suggestions = extractSuggestions(finalResults, query);

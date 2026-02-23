@@ -230,18 +230,43 @@ router.post("/", async (req, res) => {
     .join(" ");
   const expandedQuery = prevUserQueries ? `${query} ${prevUserQueries}` : query;
 
-  // TF-IDF 검색: 현재 쿼리 + 확장 쿼리 병합
-  const primaryResults = engine.search(query, 15);
-  const expandedResults = prevUserQueries ? engine.search(expandedQuery, 15) : [];
+  // 따옴표 포함 시 전체 인덱스 스캔 (TF-IDF topK 제한 우회)
+  let candidates;
+  if (quotedTerms.length > 0) {
+    const exactMatched = engine.documents.filter((doc) => {
+      const docTokenSet = new Set(engine.tokenize(engine._docToText(doc)));
+      return quotedTerms.every((phrase) =>
+        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
+      );
+    });
+    if (normalQuery) {
+      const tfidfResults = engine.search(normalQuery, engine.documents.length);
+      const scoreMap = new Map(tfidfResults.map((r) => [r.document, r.score]));
+      candidates = exactMatched
+        .map((doc) => ({ score: scoreMap.get(doc) || 0, document: doc }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 15);
+    } else {
+      candidates = exactMatched.slice(0, 15).map((doc) => ({ score: 1, document: doc }));
+    }
+  } else {
+    // 일반 TF-IDF 검색 + 확장 쿼리 병합
+    const primaryResults = engine.search(query, 15);
+    const expandedResults = prevUserQueries ? engine.search(expandedQuery, 15) : [];
+    const seenDocs = new Set(primaryResults.map((r) => r.document));
+    const merged = [
+      ...primaryResults,
+      ...expandedResults.filter((r) => !seenDocs.has(r.document)),
+    ].slice(0, 15);
+    const queryTokens = engine.tokenize(query);
+    const andFiltered = merged.filter((r) => {
+      const docText = engine._docToText(r.document).toLowerCase();
+      return queryTokens.every((t) => docText.includes(t));
+    });
+    candidates = andFiltered.length > 0 ? andFiltered : merged;
+  }
 
-  // 중복 제거 후 병합 (현재 쿼리 결과 우선)
-  const seenIds = new Set(primaryResults.map((r) => r.document.id));
-  const mergedResults = [
-    ...primaryResults,
-    ...expandedResults.filter((r) => !seenIds.has(r.document.id)),
-  ].slice(0, 15);
-
-  const enriched = mergedResults.map((r) => {
+  const enriched = candidates.map((r) => {
     const splits = db
       .prepare("SELECT * FROM split_tables WHERE plan_id = ?")
       .all(r.document.plan_id);
@@ -256,23 +281,7 @@ router.post("/", async (req, res) => {
     };
   });
 
-  // 일반 키워드 AND 필터 (결과 없으면 폴백)
-  const queryTokens = engine.tokenize(normalQuery || query);
-  const andFiltered = enriched.filter((r) => {
-    const docText = engine._docToText(r.experiment).toLowerCase();
-    return queryTokens.every((token) => docText.includes(token));
-  });
-  let finalResults = andFiltered.length > 0 ? andFiltered : enriched;
-
-  // "따옴표" 정확 매칭 필터 (엄격 적용, 폴백 없음)
-  if (quotedTerms.length > 0) {
-    finalResults = finalResults.filter((r) => {
-      const docTokenSet = new Set(engine.tokenize(engine._docToText(r.experiment)));
-      return quotedTerms.every((phrase) =>
-        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
-      );
-    });
-  }
+  const finalResults = enriched;
 
   // LLM 설정 확인
   const config = getConfig();
