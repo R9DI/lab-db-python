@@ -200,12 +200,27 @@ router.post("/config/test", async (req, res) => {
   }
 });
 
+// 쿼리에서 "..." 따옴표로 감싼 정확 매칭 용어 추출
+function parseQuery(rawQuery) {
+  const quotedTerms = [];
+  const quotedRegex = /"([^"]+)"/g;
+  let match;
+  while ((match = quotedRegex.exec(rawQuery)) !== null) {
+    const term = match[1].trim();
+    if (term) quotedTerms.push(term);
+  }
+  const normalQuery = rawQuery.replace(/"[^"]*"/g, " ").replace(/\s+/g, " ").trim();
+  return { quotedTerms, normalQuery };
+}
+
 // ─── 메인 검색 엔드포인트 ───
 router.post("/", async (req, res) => {
   const { query, conversationHistory = [] } = req.body;
   if (!query) return res.status(400).json({ error: "query is required" });
 
   if (!indexed) ensureIndex();
+
+  const { quotedTerms, normalQuery } = parseQuery(query);
 
   // 후속 질문 시 대화 이력의 이전 사용자 쿼리를 합쳐 검색 범위 확장
   const prevUserQueries = conversationHistory
@@ -241,12 +256,23 @@ router.post("/", async (req, res) => {
     };
   });
 
-  const queryTokens = engine.tokenize(query);
-  const filtered = enriched.filter((r) => {
+  // 일반 키워드 AND 필터 (결과 없으면 폴백)
+  const queryTokens = engine.tokenize(normalQuery || query);
+  const andFiltered = enriched.filter((r) => {
     const docText = engine._docToText(r.experiment).toLowerCase();
     return queryTokens.every((token) => docText.includes(token));
   });
-  const finalResults = filtered;
+  let finalResults = andFiltered.length > 0 ? andFiltered : enriched;
+
+  // "따옴표" 정확 매칭 필터 (엄격 적용, 폴백 없음)
+  if (quotedTerms.length > 0) {
+    finalResults = finalResults.filter((r) => {
+      const docTokenSet = new Set(engine.tokenize(engine._docToText(r.experiment)));
+      return quotedTerms.every((phrase) =>
+        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
+      );
+    });
+  }
 
   // LLM 설정 확인
   const config = getConfig();

@@ -232,11 +232,26 @@ function generateSummary(results, query) {
   return lines.join("\n");
 }
 
+// 쿼리에서 "..." 따옴표로 감싼 정확 매칭 용어 추출
+function parseQuery(rawQuery) {
+  const quotedTerms = [];
+  const quotedRegex = /"([^"]+)"/g;
+  let match;
+  while ((match = quotedRegex.exec(rawQuery)) !== null) {
+    const term = match[1].trim();
+    if (term) quotedTerms.push(term);
+  }
+  const normalQuery = rawQuery.replace(/"[^"]*"/g, " ").replace(/\s+/g, " ").trim();
+  return { quotedTerms, normalQuery };
+}
+
 router.post("/", (req, res) => {
   const { query, topK = 10 } = req.body;
   if (!query) return res.status(400).json({ error: "query is required" });
 
   if (!indexed) ensureIndex();
+
+  const { quotedTerms, normalQuery } = parseQuery(query);
 
   const results = engine.search(query, topK);
 
@@ -255,16 +270,23 @@ router.post("/", (req, res) => {
     };
   });
 
-  // 각 검색어 토큰이 최소 하나는 매칭되는 결과만 유지 (AND 필터링)
-  const queryTokens = engine.tokenize(query);
-  const filtered = enriched.filter((r) => {
+  // 일반 키워드 AND 필터 (결과 없으면 폴백)
+  const queryTokens = engine.tokenize(normalQuery || query);
+  const andFiltered = enriched.filter((r) => {
     const docText = engine._docToText(r.experiment).toLowerCase();
-    // 모든 검색 키워드가 문서에 포함되어야 함
     return queryTokens.every((token) => docText.includes(token));
   });
+  let finalResults = andFiltered.length > 0 ? andFiltered : enriched;
 
-  // 입력한 키워드를 모두 포함하는 결과만 반환 (엄격한 AND 필터)
-  const finalResults = filtered;
+  // "따옴표" 정확 매칭 필터 (엄격 적용, 폴백 없음)
+  if (quotedTerms.length > 0) {
+    finalResults = finalResults.filter((r) => {
+      const docTokenSet = new Set(engine.tokenize(engine._docToText(r.experiment)));
+      return quotedTerms.every((phrase) =>
+        engine.tokenize(phrase).every((tok) => docTokenSet.has(tok))
+      );
+    });
+  }
 
   const summary = generateSummary(finalResults, query);
   const suggestions = extractSuggestions(finalResults, query);
