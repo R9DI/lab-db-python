@@ -84,8 +84,33 @@ router.get("/", (req, res) => {
       (SELECT COUNT(*) FROM split_tables) AS total_split_rows
   `).get();
 
+  // 과제별 집계 (이슈 배열을 JS에서 그룹핑)
+  const allProjects = db.prepare(`
+    SELECT p.iacpj_nm, COALESCE(e.cnt, 0) AS experiment_count
+    FROM projects p
+    LEFT JOIN (SELECT iacpj_nm, COUNT(*) AS cnt FROM experiments GROUP BY iacpj_nm) e
+      ON p.iacpj_nm = e.iacpj_nm
+    ORDER BY p.iacpj_nm
+  `).all();
+
+  function countBy(arr, key, projectName) {
+    return arr.filter((r) => r[key] === projectName).length;
+  }
+
+  const projectSummary = allProjects.map((p) => ({
+    iacpj_nm: p.iacpj_nm,
+    experiment_count: p.experiment_count,
+    split_poor:    countBy(splitPoor,    "iacpj_nm", p.iacpj_nm),
+    dup_eval:      countBy(dupEvalItem,  "iacpj_nm", p.iacpj_nm),
+    note_missing:  countBy(noteMissing,  "iacpj_nm", p.iacpj_nm),
+    cond_missing:  countBy(condMissing,  "iacpj_nm", p.iacpj_nm),
+    field_missing: countBy(fieldMissing, "iacpj_nm", p.iacpj_nm),
+    lot_missing:   countBy(lotMissing,   "iacpj_nm", p.iacpj_nm),
+  }));
+
   res.json({
     summary,
+    projectSummary,
     issues: {
       splitPoor,
       dupEvalItem,
