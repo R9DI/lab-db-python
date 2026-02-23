@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import ReactECharts from "echarts-for-react";
 
 const ISSUE_COLS = [
   { key: "split_poor",    label: "Split 불량",      severity: "critical" },
@@ -204,6 +205,94 @@ export default function DBAnalysis() {
     setSelectedProject((prev) => prev?.iacpj_nm === proj.iacpj_nm ? null : proj);
   };
 
+  // 차트용 데이터 (실험 1건 이상, 실험수 많은 순)
+  const chartProjects = [...projectSummary]
+    .filter((p) => p.experiment_count > 0)
+    .sort((a, b) => b.experiment_count - a.experiment_count);
+
+  const projNames = chartProjects.map((p) => {
+    const name = p.iacpj_nm || "";
+    return name.length > 10 ? name.slice(0, 10) + "…" : name;
+  });
+
+  const pct = (num, den) => den > 0 ? Math.round((num / den) * 100) : 0;
+
+  // Chart 1: Split 미작성률 (split_poor / experiment_count)
+  const chart1Option = {
+    tooltip: {
+      trigger: "axis",
+      formatter: (params) => {
+        const p = chartProjects[params[0].dataIndex];
+        return `${p.iacpj_nm}<br/>Split 불량: ${p.split_poor}/${p.experiment_count}건 (${params[0].value}%)`;
+      },
+    },
+    grid: { left: 40, right: 20, top: 20, bottom: 60 },
+    xAxis: {
+      type: "category",
+      data: projNames,
+      axisLabel: { rotate: 35, fontSize: 10, interval: 0 },
+    },
+    yAxis: {
+      type: "value", min: 0, max: 100,
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: [{
+      type: "bar",
+      data: chartProjects.map((p) => ({
+        value: pct(p.split_poor, p.experiment_count),
+        itemStyle: {
+          color: pct(p.split_poor, p.experiment_count) === 0 ? "#86efac" : "#f87171",
+        },
+      })),
+      label: { show: true, position: "top", fontSize: 10, formatter: "{c}%" },
+      barMaxWidth: 40,
+    }],
+  };
+
+  // Chart 2: OPER Row 불량률 (note/조건 누락 / oper_row_count)
+  const chart2Option = {
+    tooltip: {
+      trigger: "axis",
+      formatter: (params) => {
+        const p = chartProjects[params[0].dataIndex];
+        const lines = [`${p.iacpj_nm} (OPER행: ${p.oper_row_count}건)`];
+        params.forEach((param) => {
+          lines.push(`${param.seriesName}: ${param.value}%`);
+        });
+        return lines.join("<br/>");
+      },
+    },
+    legend: { top: 0, data: ["Note 누락률", "조건 누락률"], textStyle: { fontSize: 11 } },
+    grid: { left: 40, right: 20, top: 30, bottom: 60 },
+    xAxis: {
+      type: "category",
+      data: projNames,
+      axisLabel: { rotate: 35, fontSize: 10, interval: 0 },
+    },
+    yAxis: {
+      type: "value", min: 0, max: 100,
+      axisLabel: { formatter: "{value}%" },
+    },
+    series: [
+      {
+        name: "Note 누락률",
+        type: "bar",
+        data: chartProjects.map((p) => pct(p.note_missing, p.oper_row_count)),
+        itemStyle: { color: "#fbbf24" },
+        label: { show: true, position: "top", fontSize: 9, formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
+        barMaxWidth: 30,
+      },
+      {
+        name: "조건 누락률",
+        type: "bar",
+        data: chartProjects.map((p) => pct(p.cond_missing, p.oper_row_count)),
+        itemStyle: { color: "#f97316" },
+        label: { show: true, position: "top", fontSize: 9, formatter: (v) => v.value > 0 ? `${v.value}%` : "" },
+        barMaxWidth: 30,
+      },
+    ],
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* 헤더 */}
@@ -233,6 +322,18 @@ export default function DBAnalysis() {
             </p>
           </div>
         ))}
+      </div>
+
+      {/* 차트 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-gray-600 mb-3">Split Table 미작성률 <span className="font-normal text-gray-400">(불량 실험 / 전체 실험)</span></p>
+          <ReactECharts option={chart1Option} style={{ height: 240 }} />
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <p className="text-xs font-semibold text-gray-600 mb-3">OPER Row 불량률 <span className="font-normal text-gray-400">(누락 행 / OPER_ID 있는 전체 행)</span></p>
+          <ReactECharts option={chart2Option} style={{ height: 240 }} />
+        </div>
       </div>
 
       {/* 과제별 이슈 테이블 */}
