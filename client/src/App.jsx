@@ -9,10 +9,12 @@ import ExperimentProgress from "./pages/ExperimentProgress";
 import LLMSearch from "./pages/LLMSearch";
 import LLMNewExperiment from "./pages/LLMNewExperiment";
 import HomePage from "./pages/HomePage";
+import DBAnalysis from "./pages/DBAnalysis";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
   { to: "/upload", label: "데이터 업로드" },
+  { to: "/db-analysis", label: "DB 품질 분석" },
 ];
 
 const planSubPages = [
@@ -102,7 +104,10 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-indigo-700 text-white shadow-lg">
         <div className="px-8 py-3 flex items-center gap-8">
-          <Link to="/home" className="text-xl font-bold tracking-tight hover:text-indigo-200 transition-colors">
+          <Link
+            to="/home"
+            className="text-xl font-bold tracking-tight hover:text-indigo-200 transition-colors"
+          >
             실험 통합 관리
           </Link>
           <div className="flex gap-2">
@@ -129,6 +134,7 @@ function App() {
           <Route path="/llm-new-experiment" element={<LLMNewExperiment />} />
           <Route path="/lot-assign" element={<LotAssign />} />
           <Route path="/progress" element={<ExperimentProgress />} />
+          <Route path="/db-analysis" element={<DBAnalysis />} />
         </Routes>
       </main>
     </div>

@@ -18,6 +18,7 @@ app.use("/api/search", require("./routes/search"));
 app.use("/api/upload", require("./routes/upload"));
 app.use("/api/llm-search", require("./routes/llm-search"));
 app.use("/api/line-lots", require("./routes/lineLots"));
+app.use("/api/analysis", require("./routes/analysis"));
 
 const PORT = 3001;
 app.listen(PORT, () => {
