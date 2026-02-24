@@ -197,7 +197,7 @@ function NewExperiment() {
 
   // WF toggle cell renderer — 같은 oper_id+oper_nm 그룹 내 웨이퍼 중복 배정 방지
   const WfCellRenderer = useCallback((params) => {
-    const isOn = params.value === "O";
+    const isOn = params.value != null && params.value !== "";
     const field = params.colDef.field;
     const currentRow = params.data;
     const operId = currentRow.oper_id;

@@ -29,7 +29,7 @@ function SplitTable({ splits }) {
         field: key,
         width: 55,
         cellStyle: (params) => {
-          if (params.value === "O")
+          if (params.value != null && params.value !== "")
             return {
               color: "#059669",
               fontWeight: "bold",
