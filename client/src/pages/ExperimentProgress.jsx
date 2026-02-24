@@ -62,14 +62,70 @@ function ProjectInfoTab({ project }) {
   );
 }
 
+/* ─── 체크리스트 아이템 ─── */
+function ChecklistSection({ items, onChange }) {
+  const addItem = () => onChange([...items, { text: "", done: false }]);
+  const toggleItem = (i) => {
+    const next = items.map((it, idx) => idx === i ? { ...it, done: !it.done } : it);
+    onChange(next);
+  };
+  const editItem = (i, text) => {
+    const next = items.map((it, idx) => idx === i ? { ...it, text } : it);
+    onChange(next);
+  };
+  const removeItem = (i) => onChange(items.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-1.5">
+      {items.map((it, i) => (
+        <div key={i} className="flex items-center gap-2 group">
+          <button onClick={() => toggleItem(i)}
+            className={`w-4.5 h-4.5 shrink-0 rounded border flex items-center justify-center transition ${
+              it.done ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300 hover:border-emerald-400"
+            }`} style={{ width: 18, height: 18 }}>
+            {it.done && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>}
+          </button>
+          <input
+            value={it.text}
+            onChange={(e) => editItem(i, e.target.value)}
+            placeholder="항목 입력..."
+            className={`flex-1 text-sm bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none py-0.5 transition ${
+              it.done ? "line-through text-gray-400" : "text-gray-700"
+            }`}
+          />
+          <button onClick={() => removeItem(i)}
+            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition shrink-0">✕</button>
+        </div>
+      ))}
+      <button onClick={addItem}
+        className="text-xs text-indigo-400 hover:text-indigo-600 transition mt-1 flex items-center gap-1">
+        <span className="text-base leading-none">+</span> 항목 추가
+      </button>
+    </div>
+  );
+}
+
 /* ─── LOT 상세 정보 영역 ─── */
 function LotDetail({ experiment }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [checklist, setChecklist] = useState([]);
+  const [issue, setIssue] = useState("");
+  const [inlineData, setInlineData] = useState("");
+  const [outlineData, setOutlineData] = useState("");
+  const [summary, setSummary] = useState("");
 
   useEffect(() => {
     if (!experiment) return;
     setLoading(true);
+    // 실험 바뀌면 입력 초기화
+    setChecklist([]);
+    setIssue("");
+    setInlineData("");
+    setOutlineData("");
+    setSummary("");
     axios
       .get(`/api/experiments/${experiment.id}`)
       .then((res) => setDetail(res.data))
@@ -80,21 +136,26 @@ function LotDetail({ experiment }) {
   if (loading) return <div className="text-center text-gray-400 py-8">로딩 중...</div>;
   if (!detail) return null;
 
-  const sections = [
-    { key: "issue", title: "Issue사항" },
-    { key: "checklist", title: "Checklist" },
-    { key: "Summary", title: "Summary" },
-  ];
+  const textareaCls = "w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-300 transition placeholder-gray-300";
+
+  const SectionHeader = ({ emoji, title, badge }) => (
+    <div className="flex items-center gap-2 mb-2">
+      <span>{emoji}</span>
+      <h4 className="text-sm font-bold text-gray-700">{title}</h4>
+      {badge && <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-400 rounded">{badge}</span>}
+    </div>
+  );
 
   return (
-    <div className="mt-4 border-t border-gray-200 pt-5 space-y-5">
+    <div className="mt-4 border-t border-gray-200 pt-5 space-y-6">
       <h3 className="text-base font-bold text-gray-800">
         {detail.plan_id || "N/A"} — LOT Total Information
       </h3>
 
+      {/* Split Table */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <h4 className="text-sm font-bold text-gray-700">Split Table</h4>
+          <h4 className="text-sm font-bold text-gray-700">📋 Split Table</h4>
           <span className="text-xs text-gray-400">(plan_id: {detail.plan_id || "N/A"})</span>
         </div>
         {detail.splits && detail.splits.length > 0 ? (
@@ -104,14 +165,62 @@ function LotDetail({ experiment }) {
         )}
       </div>
 
-      {sections.map(({ key, title }) => (
-        <div key={key}>
-          <h4 className="text-sm font-bold text-gray-700 mb-2">{title}</h4>
-          <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-6 text-center">
-            <p className="text-gray-400 text-sm">준비 중인 기능입니다</p>
-          </div>
-        </div>
-      ))}
+      {/* 실험 Checklist */}
+      <div className="bg-white border border-gray-200 rounded-xl p-4">
+        <SectionHeader emoji="✅" title="실험 Checklist" badge={`${checklist.filter(i=>i.done).length}/${checklist.length}`} />
+        <ChecklistSection items={checklist} onChange={setChecklist} />
+        {checklist.length === 0 && (
+          <p className="text-xs text-gray-300 py-1">체크리스트 항목을 추가하세요</p>
+        )}
+      </div>
+
+      {/* Issue 사항 */}
+      <div className="bg-white border border-red-100 rounded-xl p-4">
+        <SectionHeader emoji="⚠️" title="Issue 사항" badge="사고 · 특이사항" />
+        <textarea
+          value={issue}
+          onChange={(e) => setIssue(e.target.value)}
+          rows={3}
+          placeholder="사고, 특이사항, 공정 이슈 등을 기록하세요..."
+          className={textareaCls}
+        />
+      </div>
+
+      {/* Inline Data */}
+      <div className="bg-white border border-blue-100 rounded-xl p-4">
+        <SectionHeader emoji="📊" title="Inline Data" />
+        <textarea
+          value={inlineData}
+          onChange={(e) => setInlineData(e.target.value)}
+          rows={4}
+          placeholder="Inline 측정 데이터를 입력하세요..."
+          className={textareaCls}
+        />
+      </div>
+
+      {/* Outline Data */}
+      <div className="bg-white border border-violet-100 rounded-xl p-4">
+        <SectionHeader emoji="📈" title="Outline Data" />
+        <textarea
+          value={outlineData}
+          onChange={(e) => setOutlineData(e.target.value)}
+          rows={4}
+          placeholder="Outline 측정 데이터를 입력하세요..."
+          className={textareaCls}
+        />
+      </div>
+
+      {/* Summary */}
+      <div className="bg-white border border-emerald-100 rounded-xl p-4">
+        <SectionHeader emoji="📝" title="Summary" />
+        <textarea
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          rows={4}
+          placeholder="실험 결과 요약 및 결론을 작성하세요..."
+          className={textareaCls}
+        />
+      </div>
     </div>
   );
 }
