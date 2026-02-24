@@ -14,8 +14,8 @@ import AgentDemo from "./pages/AgentDemo";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
+  { to: "/db-analysis", label: "통합 DB 분석" },
   { to: "/upload", label: "데이터 업로드" },
-  { to: "/db-analysis", label: "DB 품질 분석" },
 ];
 
 const planSubPages = [
