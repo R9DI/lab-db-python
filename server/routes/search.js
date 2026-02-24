@@ -272,14 +272,14 @@ router.post("/", (req, res) => {
       candidates = exactMatched.slice(0, topK).map((doc) => ({ score: 1, document: doc }));
     }
   } else {
-    // 일반 TF-IDF 검색
-    const tfidfResults = engine.search(query, topK);
+    // 전체 인덱스에서 TF-IDF 검색 후 AND 필터 → 상위 topK
+    const tfidfResults = engine.search(query, engine.documents.length);
     const queryTokens = engine.tokenize(query);
     const andFiltered = tfidfResults.filter((r) => {
       const docText = engine._docToText(r.document).toLowerCase();
       return queryTokens.every((t) => docText.includes(t));
     });
-    candidates = andFiltered.length > 0 ? andFiltered : tfidfResults;
+    candidates = andFiltered.slice(0, topK);
   }
 
   const enriched = candidates.map((r) => {
