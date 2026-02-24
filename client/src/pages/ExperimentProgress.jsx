@@ -62,56 +62,22 @@ function ProjectInfoTab({ project }) {
   );
 }
 
-/* ─── 체크리스트 아이템 ─── */
-function ChecklistSection({ items, onChange }) {
-  const addItem = () => onChange([...items, { text: "", done: false }]);
-  const toggleItem = (i) => {
-    const next = items.map((it, idx) => idx === i ? { ...it, done: !it.done } : it);
-    onChange(next);
-  };
-  const editItem = (i, text) => {
-    const next = items.map((it, idx) => idx === i ? { ...it, text } : it);
-    onChange(next);
-  };
-  const removeItem = (i) => onChange(items.filter((_, idx) => idx !== i));
-
-  return (
-    <div className="space-y-1.5">
-      {items.map((it, i) => (
-        <div key={i} className="flex items-center gap-2 group">
-          <button onClick={() => toggleItem(i)}
-            className={`w-4.5 h-4.5 shrink-0 rounded border flex items-center justify-center transition ${
-              it.done ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300 hover:border-emerald-400"
-            }`} style={{ width: 18, height: 18 }}>
-            {it.done && <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>}
-          </button>
-          <input
-            value={it.text}
-            onChange={(e) => editItem(i, e.target.value)}
-            placeholder="항목 입력..."
-            className={`flex-1 text-sm bg-transparent border-b border-transparent focus:border-gray-300 focus:outline-none py-0.5 transition ${
-              it.done ? "line-through text-gray-400" : "text-gray-700"
-            }`}
-          />
-          <button onClick={() => removeItem(i)}
-            className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-400 text-xs transition shrink-0">✕</button>
-        </div>
-      ))}
-      <button onClick={addItem}
-        className="text-xs text-indigo-400 hover:text-indigo-600 transition mt-1 flex items-center gap-1">
-        <span className="text-base leading-none">+</span> 항목 추가
-      </button>
-    </div>
-  );
-}
+const checklistColDefs = [
+  { field: "no", headerName: "No.", width: 60, editable: true },
+  { field: "item", headerName: "항목", flex: 1, minWidth: 200, editable: true },
+  { field: "status", headerName: "상태", width: 100, editable: true },
+  { field: "owner", headerName: "담당자", width: 100, editable: true },
+  { field: "due", headerName: "기한", width: 110, editable: true },
+  { field: "note", headerName: "비고", flex: 1, minWidth: 150, editable: true },
+];
 
 /* ─── LOT 상세 정보 영역 ─── */
 function LotDetail({ experiment }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [checklist, setChecklist] = useState([]);
+  const [checklistRows, setChecklistRows] = useState([
+    { no: 1, item: "", status: "", owner: "", due: "", note: "" },
+  ]);
   const [issue, setIssue] = useState("");
   const [inlineData, setInlineData] = useState("");
   const [outlineData, setOutlineData] = useState("");
@@ -121,7 +87,7 @@ function LotDetail({ experiment }) {
     if (!experiment) return;
     setLoading(true);
     // 실험 바뀌면 입력 초기화
-    setChecklist([]);
+    setChecklistRows([{ no: 1, item: "", status: "", owner: "", due: "", note: "" }]);
     setIssue("");
     setInlineData("");
     setOutlineData("");
@@ -167,11 +133,29 @@ function LotDetail({ experiment }) {
 
       {/* 실험 Checklist */}
       <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <SectionHeader emoji="✅" title="실험 Checklist" badge={`${checklist.filter(i=>i.done).length}/${checklist.length}`} />
-        <ChecklistSection items={checklist} onChange={setChecklist} />
-        {checklist.length === 0 && (
-          <p className="text-xs text-gray-300 py-1">체크리스트 항목을 추가하세요</p>
-        )}
+        <div className="flex items-center justify-between mb-2">
+          <SectionHeader emoji="✅" title="실험 Checklist" />
+          <button
+            onClick={() => setChecklistRows(prev => [...prev, { no: prev.length + 1, item: "", status: "", owner: "", due: "", note: "" }])}
+            className="text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition">
+            + 행 추가
+          </button>
+        </div>
+        <div style={{ height: Math.min(checklistRows.length * 36 + 40, 240) }}>
+          <AgGridReact
+            rowData={checklistRows}
+            columnDefs={checklistColDefs}
+            defaultColDef={{ resizable: true, editable: true, suppressMovable: true }}
+            headerHeight={36}
+            rowHeight={36}
+            stopEditingWhenCellsLoseFocus
+            onCellValueChanged={(e) => {
+              const updated = [];
+              e.api.forEachNode(n => updated.push(n.data));
+              setChecklistRows(updated);
+            }}
+          />
+        </div>
       </div>
 
       {/* Issue 사항 */}
