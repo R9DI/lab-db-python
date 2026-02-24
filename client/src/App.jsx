@@ -11,11 +11,9 @@ import LLMNewExperiment from "./pages/LLMNewExperiment";
 import HomePage from "./pages/HomePage";
 import DBAnalysis from "./pages/DBAnalysis";
 import AgentDemo from "./pages/AgentDemo";
-import WhyDB from "./pages/WhyDB";
 
 const dbSubPages = [
   { to: "/", label: "통합 DB Board", end: true },
-  { to: "/why-db", label: "통합 DB 필요성" },
   { to: "/upload", label: "데이터 업로드" },
   { to: "/db-analysis", label: "DB 품질 분석" },
 ];
@@ -139,7 +137,6 @@ function App() {
           <Route path="/lot-assign" element={<LotAssign />} />
           <Route path="/progress" element={<ExperimentProgress />} />
           <Route path="/db-analysis" element={<DBAnalysis />} />
-          <Route path="/why-db" element={<WhyDB />} />
           <Route path="/agent-demo" element={<AgentDemo />} />
         </Routes>
       </main>
