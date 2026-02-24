@@ -112,6 +112,11 @@ function initDB() {
     CREATE INDEX IF NOT EXISTS idx_experiments_plan ON experiments(plan_id);
     CREATE INDEX IF NOT EXISTS idx_splits_plan ON split_tables(plan_id);
   `);
+
+  // 마이그레이션: summary_text 컬럼
+  try {
+    db.exec("ALTER TABLE experiments ADD COLUMN summary_text TEXT");
+  } catch (_) { /* 이미 존재하면 무시 */ }
 }
 
 /**

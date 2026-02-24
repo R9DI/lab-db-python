@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
@@ -157,10 +157,78 @@ function SummaryContent({ experiment, project }) {
   );
 }
 
+/* ─── Autocomplete 검색 컴포넌트 ─── */
+function TableSearch({ data, fields, onFilter }) {
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    onFilter(val);
+    if (!val.trim()) { setSuggestions([]); setOpen(false); return; }
+    const seen = new Set();
+    for (const row of data) {
+      for (const field of fields) {
+        const cell = String(row[field] || "");
+        if (cell.toLowerCase().includes(val.toLowerCase()) && cell !== val) {
+          seen.add(cell);
+        }
+      }
+    }
+    setSuggestions([...seen].slice(0, 8));
+    setOpen(true);
+  };
+
+  const select = (val) => {
+    setQuery(val);
+    onFilter(val);
+    setOpen(false);
+  };
+
+  const clear = () => { setQuery(""); onFilter(""); setSuggestions([]); setOpen(false); };
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <div className="flex items-center gap-1">
+        <input
+          type="text"
+          value={query}
+          onChange={handleChange}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder="검색..."
+          className="px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none w-48"
+        />
+        {query && (
+          <button onClick={clear} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+        )}
+      </div>
+      {open && suggestions.length > 0 && (
+        <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg z-20 w-60 max-h-52 overflow-y-auto">
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              onMouseDown={() => select(s)}
+              className="block w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 hover:text-indigo-700 truncate"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── 메인 컴포넌트 ─── */
 function LotAssign() {
   const [experiments, setExperiments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingFilter, setPendingFilter] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
 
   // 모달 상태
   const [splitModal, setSplitModal] = useState(null);
@@ -256,20 +324,7 @@ function LotAssign() {
     [assignModal, fetchExperiments],
   );
 
-  // 완료 토글 핸들러
-  const handleComplete = useCallback(async (id, field, value) => {
-    try {
-      await axios.patch(`/api/experiments/${id}/complete`, { field, value });
-      // 로컬 상태 업데이트
-      setExperiments((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, [field]: value ? 1 : 0 } : e)),
-      );
-    } catch (err) {
-      console.error("완료 처리 실패:", err);
-    }
-  }, []);
-
-  // Split Table 모달 열기 (source: 'pending' | 'active')
+// Split Table 모달 열기 (source: 'pending' | 'active')
   const openSplitModal = useCallback(async (data, source = "pending") => {
     try {
       const res = await axios.get(`/api/experiments/${data.id}`);
@@ -722,6 +777,9 @@ function LotAssign() {
     return {};
   }, []);
 
+  const pendingFields = useMemo(() => ["eval_item", "iacpj_nm", "eval_category", "eval_process", "module", "lot_code", "requester"], []);
+  const activeFields = useMemo(() => ["eval_item", "iacpj_nm", "plan_id", "fab_status", "status"], []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 text-gray-400 text-lg">
@@ -731,80 +789,84 @@ function LotAssign() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col" style={{ height: "calc(100vh - 110px)" }}>
       {/* ─── 상단: Assign 전 ─── */}
-      <div>
-        <div className="mb-3">
-          <h2 className="text-xl font-bold text-gray-800">실험 Lot Assign</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Lot 배정 대기 중인 실험 —{" "}
-            <b className="text-gray-700">{pendingExperiments.length}건</b>
-          </p>
+      <div className="flex-1 min-h-0 flex flex-col pb-2">
+        <div className="flex items-center justify-between mb-2 shrink-0">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">실험 Lot Assign</h2>
+            <p className="text-sm text-gray-500">
+              Lot 배정 대기 중인 실험 —{" "}
+              <b className="text-gray-700">{pendingExperiments.length}건</b>
+            </p>
+          </div>
+          <TableSearch
+            data={pendingExperiments}
+            fields={pendingFields}
+            onFilter={setPendingFilter}
+          />
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          {pendingExperiments.length > 0 ? (
-            <div
-              style={{
-                width: "100%",
-                height: Math.max(pendingExperiments.length * 42 + 50, 150),
-                maxHeight: 400,
-              }}
-            >
-              <AgGridReact
-                rowData={pendingExperiments}
-                columnDefs={pendingColDefs}
-                defaultColDef={defaultColDef}
-                getRowStyle={getRowStyle}
-                headerHeight={40}
-                rowHeight={42}
-                suppressCellFocus={true}
-                animateRows={true}
-              />
-            </div>
-          ) : (
-            <p className="text-gray-400 text-center py-6">
-              배정 대기 중인 실험이 없습니다.
-            </p>
-          )}
+        <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-200 p-3 overflow-hidden">
+          <div style={{ width: "100%", height: "100%" }}>
+            <AgGridReact
+              rowData={pendingExperiments}
+              columnDefs={pendingColDefs}
+              defaultColDef={defaultColDef}
+              getRowStyle={getRowStyle}
+              headerHeight={40}
+              rowHeight={42}
+              suppressCellFocus={true}
+              animateRows={true}
+              quickFilterText={pendingFilter}
+            />
+          </div>
         </div>
       </div>
 
+      {/* ─── 구분선 ─── */}
+      <div className="h-px bg-gray-200 shrink-0" />
+
       {/* ─── 하단: 진행 중 + 종료 ─── */}
-      <div>
-        <div className="mb-3">
-          <h2 className="text-xl font-bold text-gray-800">실험 진행 현황</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            자재가 배정되어 진행 중인 실험 —{" "}
-            <b className="text-indigo-600">{activeExperiments.length}건</b>
-          </p>
+      <div className="flex-1 min-h-0 flex flex-col pt-2">
+        <div className="flex items-center justify-between mb-2 shrink-0">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">실험 진행 현황</h2>
+            <p className="text-sm text-gray-500">
+              자재가 배정되어 진행 중인 실험 —{" "}
+              <b className="text-indigo-600">{activeExperiments.length}건</b>
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-gray-300 text-indigo-600 accent-indigo-600 cursor-pointer"
+              />
+              완료된 실험 보기
+            </label>
+            <TableSearch
+              data={activeExperiments}
+              fields={activeFields}
+              onFilter={setActiveFilter}
+            />
+          </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          {activeExperiments.length > 0 ? (
-            <div
-              style={{
-                width: "100%",
-                height: Math.max(activeExperiments.length * 42 + 50, 150),
-                maxHeight: 500,
-              }}
-            >
-              <AgGridReact
-                rowData={activeExperiments}
-                columnDefs={activeColDefs}
-                defaultColDef={defaultColDef}
-                getRowStyle={getRowStyle}
-                headerHeight={40}
-                rowHeight={42}
-                suppressCellFocus={true}
-                animateRows={true}
-              />
-            </div>
-          ) : (
-            <p className="text-gray-400 text-center py-6">
-              진행 중인 실험이 없습니다. 상단에서 실험을 배정해주세요.
-            </p>
-          )}
+        <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-200 p-3 overflow-hidden">
+          <div style={{ width: "100%", height: "100%" }}>
+            <AgGridReact
+              rowData={activeExperiments}
+              columnDefs={activeColDefs}
+              defaultColDef={defaultColDef}
+              getRowStyle={getRowStyle}
+              headerHeight={40}
+              rowHeight={42}
+              suppressCellFocus={true}
+              animateRows={true}
+              quickFilterText={activeFilter}
+            />
+          </div>
         </div>
       </div>
 
@@ -813,36 +875,9 @@ function LotAssign() {
         <Modal
           title={`📋 Split Table — ${splitModal.evalItem} (${splitModal.planId})`}
           onClose={() => setSplitModal(null)}
-          footer={
-            splitModal.source === "active" ? (
-              <button
-                onClick={async () => {
-                  const newVal = !splitModal.splitCompleted;
-                  await handleComplete(
-                    splitModal.id,
-                    "split_completed",
-                    newVal,
-                  );
-                  setSplitModal((prev) => ({
-                    ...prev,
-                    splitCompleted: newVal,
-                  }));
-                }}
-                className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                  splitModal.splitCompleted
-                    ? "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                    : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg"
-                }`}
-              >
-                {splitModal.splitCompleted
-                  ? "✅ Split Table 작성 완료됨"
-                  : "Split Table 작성 완료"}
-              </button>
-            ) : null
-          }
-        >
+          >
           {splitModal.splits.length > 0 ? (
-            <SplitTable splits={splitModal.splits} />
+            <SplitTable splits={splitModal.splits} maxHeight={640} />
           ) : (
             <p className="text-gray-400 text-center py-8">
               등록된 Split 데이터가 없습니다.
@@ -856,36 +891,19 @@ function LotAssign() {
         <Modal
           title={`📝 실험 Summary — ${summaryModal.experiment.eval_item || summaryModal.experiment.plan_id}`}
           onClose={() => setSummaryModal(null)}
-          footer={
-            <button
-              onClick={async () => {
-                const newVal = !summaryModal.summaryCompleted;
-                await handleComplete(
-                  summaryModal.id,
-                  "summary_completed",
-                  newVal,
-                );
-                setSummaryModal((prev) => ({
-                  ...prev,
-                  summaryCompleted: newVal,
-                }));
-              }}
-              className={`px-5 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                summaryModal.summaryCompleted
-                  ? "bg-gray-200 text-gray-600 hover:bg-gray-300"
-                  : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg"
-              }`}
-            >
-              {summaryModal.summaryCompleted
-                ? "✅ Summary 작성 완료됨"
-                : "Summary 작성 완료"}
-            </button>
-          }
         >
           <SummaryContent
             experiment={summaryModal.experiment}
             project={summaryModal.project}
           />
+          {summaryModal.experiment.summary_text && (
+            <div className="mt-6 border-t border-gray-200 pt-5">
+              <h4 className="text-sm font-bold text-emerald-700 mb-2">📝 Summary</h4>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap bg-emerald-50 rounded-lg px-4 py-3 border border-emerald-100">
+                {summaryModal.experiment.summary_text}
+              </p>
+            </div>
+          )}
         </Modal>
       )}
       {/* ─── 실험 상세 Modal (평가항목 클릭) ─── */}

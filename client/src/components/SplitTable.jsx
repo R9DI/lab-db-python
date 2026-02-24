@@ -16,7 +16,7 @@ const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
 const getSplitColor = (val) =>
   SPLIT_COLORS[val?.toLowerCase()] || DEFAULT_SPLIT;
 
-function SplitTable({ splits }) {
+function SplitTable({ splits, maxHeight = 400 }) {
   if (!splits || splits.length === 0) return null;
 
   // WF 컬럼 1~25 항상 표시ㄹ
@@ -101,7 +101,7 @@ function SplitTable({ splits }) {
 
   return (
     <div
-      style={{ width: "100%", height: Math.min(splits.length * 42 + 50, 400) }}
+      style={{ width: "100%", height: Math.min(splits.length * 42 + 50, maxHeight) }}
     >
       <AgGridReact
         rowData={sortedSplits}
@@ -110,7 +110,7 @@ function SplitTable({ splits }) {
         getRowStyle={getRowStyle}
         headerHeight={36}
         rowHeight={36}
-        domLayout={splits.length <= 8 ? "autoHeight" : undefined}
+        domLayout={splits.length * 42 + 50 <= maxHeight ? "autoHeight" : undefined}
         suppressCellFocus={true}
       />
     </div>

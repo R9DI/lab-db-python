@@ -3,7 +3,7 @@ import axios from "axios";
 import { AgGridReact } from "ag-grid-react";
 import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 import ProjectCard from "../components/ProjectCard";
-import SplitTable from "../components/SplitTable";
+import EditableSplitTable from "../components/EditableSplitTable";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -82,6 +82,8 @@ function LotDetail({ experiment }) {
   const [inlineData, setInlineData] = useState("");
   const [outlineData, setOutlineData] = useState("");
   const [summary, setSummary] = useState("");
+  const [summaryCompleted, setSummaryCompleted] = useState(false);
+  const [summarySaving, setSummarySaving] = useState(false);
 
   useEffect(() => {
     if (!experiment) return;
@@ -92,9 +94,15 @@ function LotDetail({ experiment }) {
     setInlineData("");
     setOutlineData("");
     setSummary("");
+    setSummaryCompleted(false);
+    setSummarySaving(false);
     axios
       .get(`/api/experiments/${experiment.id}`)
-      .then((res) => setDetail(res.data))
+      .then((res) => {
+        setDetail(res.data);
+        setSummary(res.data.summary_text || "");
+        setSummaryCompleted(!!res.data.summary_completed);
+      })
       .catch((err) => console.error("실험 상세 로드 실패:", err))
       .finally(() => setLoading(false));
   }, [experiment]);
@@ -125,7 +133,12 @@ function LotDetail({ experiment }) {
           <span className="text-xs text-gray-400">(plan_id: {detail.plan_id || "N/A"})</span>
         </div>
         {detail.splits && detail.splits.length > 0 ? (
-          <SplitTable splits={detail.splits} />
+          <EditableSplitTable
+            splits={detail.splits}
+            planId={detail.plan_id}
+            experimentId={detail.id}
+            onSaved={() => {}}
+          />
         ) : (
           <p className="text-gray-400 text-sm py-4 text-center">등록된 Split 데이터가 없습니다.</p>
         )}
@@ -196,10 +209,35 @@ function LotDetail({ experiment }) {
 
       {/* Summary */}
       <div className="bg-white border border-emerald-100 rounded-xl p-4">
-        <SectionHeader emoji="📝" title="Summary" />
+        <div className="flex items-center justify-between mb-2">
+          <SectionHeader emoji="📝" title="Summary" />
+          <button
+            onClick={async () => {
+              setSummarySaving(true);
+              try {
+                await axios.patch(`/api/experiments/${detail.id}/summary`, { summary_text: summary });
+                setSummaryCompleted(true);
+              } catch (err) {
+                console.error("Summary 저장 실패:", err);
+                alert("저장에 실패했습니다.");
+              }
+              setSummarySaving(false);
+            }}
+            disabled={summarySaving}
+            className={`text-xs px-4 py-1.5 rounded-lg font-semibold transition ${
+              summarySaving
+                ? "bg-gray-300 text-gray-500 cursor-wait"
+                : summaryCompleted
+                ? "bg-emerald-500 text-white hover:bg-emerald-600"
+                : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+            }`}
+          >
+            {summarySaving ? "저장 중..." : summaryCompleted ? "✅ 완료됨" : "최종 저장"}
+          </button>
+        </div>
         <textarea
           value={summary}
-          onChange={(e) => setSummary(e.target.value)}
+          onChange={(e) => { setSummary(e.target.value); setSummaryCompleted(false); }}
           rows={4}
           placeholder="실험 결과 요약 및 결론을 작성하세요..."
           className={textareaCls}

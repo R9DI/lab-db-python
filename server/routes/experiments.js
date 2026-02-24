@@ -182,21 +182,30 @@ router.patch("/:id/assign-lot", (req, res) => {
     return res.status(400).json({ error: "lot_id는 필수입니다." });
   }
   try {
+    const expId = req.params.id;
+    const newPlanId = lot_id.trim();
+    const tempPlanId = `EXP-${expId}`;
+
     const result = db
       .prepare(
         "UPDATE experiments SET plan_id = ?, status = '실험 진행 중' WHERE id = ?",
       )
-      .run(lot_id.trim(), req.params.id);
+      .run(newPlanId, expId);
     if (result.changes === 0) {
       return res.status(404).json({ error: "실험을 찾을 수 없습니다." });
     }
+    // split_tables의 임시 plan_id(EXP-{id})를 실제 lot plan_id로 업데이트
+    db.prepare("UPDATE split_tables SET plan_id = ? WHERE plan_id = ?")
+      .run(newPlanId, tempPlanId);
+
     // line_lots에서 해당 lot을 assigned로 변경
     db.prepare("UPDATE line_lots SET status = 'assigned' WHERE lot_id = ?").run(
-      lot_id.trim(),
+      newPlanId,
     );
     const updated = db
       .prepare("SELECT * FROM experiments WHERE id = ?")
-      .get(req.params.id);
+      .get(expId);
+    invalidateIndex();
     res.json(updated);
   } catch (err) {
     console.error("Lot 배정 오류:", err);
@@ -270,6 +279,29 @@ router.patch("/:id/complete", (req, res) => {
   }
 
   res.json({ message: "업데이트 완료", [field]: value ? 1 : 0 });
+});
+
+// Summary 텍스트 저장 + summary_completed = true + Status 재계산
+router.patch("/:id/summary", (req, res) => {
+  const { summary_text } = req.body;
+  const id = req.params.id;
+
+  const result = db
+    .prepare("UPDATE experiments SET summary_text = ?, summary_completed = 1 WHERE id = ?")
+    .run(summary_text ?? null, id);
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "실험을 찾을 수 없습니다." });
+  }
+
+  const experiment = db.prepare("SELECT * FROM experiments WHERE id = ?").get(id);
+  if (experiment && experiment.fab_status && experiment.fab_status !== "In Fab") {
+    const newStatus = experiment.split_completed
+      ? "실험 종료(결과 완료)"
+      : "실험 종료(결과 등록 전)";
+    db.prepare("UPDATE experiments SET status = ? WHERE id = ?").run(newStatus, id);
+  }
+
+  res.json({ message: "Summary 저장 완료", summary_completed: 1 });
 });
 
 // Fab 상태 변경 + Status 자동 계산
