@@ -600,6 +600,42 @@ function DemoChatPanel({ onHide, suggestionTrigger, onFillForm, fillDoneTrigger,
   );
 }
 
+/* ─── 경고 확인 팝업 ─── */
+function WarningModal({ onProceed, onCancel }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-6 flex flex-col items-center gap-4">
+        <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+          <svg className="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="font-bold text-gray-800 text-base mb-2">Assign 요청 전 확인</p>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            Agent가 추천한 대로 실험과 Split이 구성되었습니다.<br />
+            정보가 불충분하거나 과거 실험과 차이가 없을 경우<br />
+            Assign 받지 못할 수 있습니다.<br />
+            <span className="font-semibold text-gray-700">이대로 Assign을 요청할까요?</span>
+          </p>
+        </div>
+        <div className="flex gap-2 w-full">
+          <button onClick={onProceed}
+            className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm transition">
+            그대로 진행
+          </button>
+          <button onClick={onCancel}
+            className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold text-sm transition">
+            추가 수정하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── 누락 필드 팝업 ─── */
 function ValidationModal({ missing, onClose }) {
   return (
@@ -646,6 +682,7 @@ export default function AgentDemo() {
   const [postModalTrigger, setPostModalTrigger] = useState(0);
   const [validationMissing, setValidationMissing] = useState(null);
   const [splitPendingModal, setSplitPendingModal] = useState(false);
+  const [showWarningModal, setShowWarningModal] = useState(false);
   const suggestionFired = useRef(false);
 
   const handleEvalItemFocus = () => {
@@ -681,7 +718,7 @@ export default function AgentDemo() {
       setValidationMissing(missing);
       setSplitPendingModal(splitEmpty);
     } else {
-      alert("✅ Assign 요청이 접수되었습니다! (데모)");
+      setShowWarningModal(true);
     }
   };
 
@@ -702,6 +739,12 @@ export default function AgentDemo() {
     <>
       {validationMissing && (
         <ValidationModal missing={validationMissing} onClose={handleModalClose} />
+      )}
+      {showWarningModal && (
+        <WarningModal
+          onProceed={() => setShowWarningModal(false)}
+          onCancel={() => setShowWarningModal(false)}
+        />
       )}
       <Splitter style={{ height: "calc(100vh - 112px)" }}>
         <Splitter.Panel defaultSize="60%" min="40%" style={{ paddingRight: chatVisible ? 10 : 0 }}>
