@@ -204,11 +204,13 @@ function LLMSearch() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      text: "안녕하세요! LLM 기반 실험 검색 도우미입니다.\n자연어로 질문하면 실험 데이터를 분석하여 답변해드립니다.",
+      text: "안녕하세요! AI 실험 탐색 도우미입니다.\n찾고 싶은 실험을 자유롭게 말씀해주세요. 후보 실험들의 차이점을 설명하고 대화를 통해 원하는 실험을 함께 찾아드립니다.",
     },
   ]);
   const [loading, setLoading] = useState(false);
   const [llmConfig, setLlmConfig] = useState(null);
+  const [candidateIds, setCandidateIds] = useState(null);
+  const [candidateCount, setCandidateCount] = useState(null);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const navigate = useNavigate();
@@ -225,17 +227,17 @@ function LLMSearch() {
     axios.get("/api/experiments").then((res) => {
       const exps = res.data;
       if (exps.length === 0) return;
-      // 랜덤하게 최대 4개 샘플링
-      const shuffled = [...exps].sort(() => Math.random() - 0.5).slice(0, 4);
+      // 랜덤하게 최대 3개 샘플링
+      const shuffled = [...exps].sort(() => Math.random() - 0.5).slice(0, 3);
       const examples = shuffled.map((e) => {
-        if (e.eval_process) return `"${e.eval_process}" 공정 실험 현황 알려줘`;
-        if (e.eval_item) return `"${e.eval_item}" 관련 실험 찾아줘`;
-        return `"${e.iacpj_nm}" 과제 실험 현황은?`;
+        if (e.eval_process) return `"${e.eval_process}" 공정 관련 실험 찾아줘`;
+        if (e.eval_item) return `"${e.eval_item}" 관련 실험 있어?`;
+        return `"${e.iacpj_nm}" 과제에서 진행한 실험 알려줘`;
       });
-      const exampleText = examples.map((ex) => `- ${ex}`).join("\n");
+      const exampleText = examples.map((ex) => `• ${ex}`).join("\n");
       setMessages([{
         role: "assistant",
-        text: `안녕하세요! LLM 기반 실험 검색 도우미입니다.\n자연어로 질문하면 실험 데이터를 분석하여 답변해드립니다.\n\n예시:\n${exampleText}`,
+        text: `안녕하세요! AI 실험 탐색 도우미입니다.\n찾고 싶은 실험을 자유롭게 말씀해주세요. 후보 실험들의 차이점을 설명하고 대화를 통해 원하는 실험을 함께 찾아드립니다.\n\n예시:\n${exampleText}`,
       }]);
     }).catch(() => {});
   }, []);
@@ -268,8 +270,16 @@ function LLMSearch() {
       const res = await axios.post("/api/llm-search", {
         query,
         conversationHistory: getConversationHistory(),
+        candidateIds,
       });
       const data = res.data;
+
+      // 응답 결과로 후보 IDs 업데이트
+      const newIds = data.results?.map((r) => r.experiment.id) ?? [];
+      if (newIds.length > 0) {
+        setCandidateIds(newIds);
+        setCandidateCount(newIds.length);
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -313,6 +323,8 @@ function LLMSearch() {
 
   const handleReset = () => {
     setMessages([messages[0]]);
+    setCandidateIds(null);
+    setCandidateCount(null);
     setInput("");
     inputRef.current?.focus();
   };
@@ -346,7 +358,7 @@ function LLMSearch() {
                   <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                   <span className="w-2 h-2 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
-                <span>실험 데이터 분석 중...</span>
+                <span>{candidateIds ? "후보 실험 분석 중..." : "실험 데이터 검색 중..."}</span>
               </div>
             </div>
           </div>
@@ -357,6 +369,22 @@ function LLMSearch() {
 
       {/* 입력 영역 */}
       <div className="border-t bg-white p-4">
+        {/* 후보 현황 배지 */}
+        {candidateCount !== null && (
+          <div className="flex justify-center mb-2">
+            {candidateCount === 1 ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                후보 1건 — 실험을 찾았습니다!
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-50 text-violet-700 text-xs font-semibold rounded-full border border-violet-200">
+                <span className="w-1.5 h-1.5 bg-violet-400 rounded-full" />
+                현재 후보 {candidateCount}건 — 계속 답변하여 좁혀가세요
+              </span>
+            )}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex gap-3 max-w-4xl mx-auto">
           <button
             type="button"
@@ -371,7 +399,7 @@ function LLMSearch() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="실험에 대해 자유롭게 질문하세요..."
+            placeholder={candidateIds ? "후보를 더 좁혀줄 조건을 말씀해주세요..." : "찾고 싶은 실험을 자유롭게 말씀해주세요..."}
             className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none"
             autoFocus
             disabled={loading}
@@ -390,7 +418,8 @@ function LLMSearch() {
 }
 
 function ChatBubble({ message, onCreateFromExperiment }) {
-  const [showResults, setShowResults] = useState(false);
+  const isSingle = message.results?.length === 1;
+  const [showResults, setShowResults] = useState(isSingle);
   const isUser = message.role === "user";
 
   if (isUser) {
@@ -421,20 +450,39 @@ function ChatBubble({ message, onCreateFromExperiment }) {
 
         {message.results && message.results.length > 0 && (
           <div>
-            <button
-              onClick={() => setShowResults(!showResults)}
-              className="text-sm text-violet-600 hover:text-violet-800 font-medium mb-2 flex items-center gap-1"
-            >
-              <svg className={`w-3.5 h-3.5 transition-transform ${showResults ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              참조 실험 데이터 ({message.results.length}건)
-            </button>
-            {showResults && (
+            {isSingle ? (
+              /* 1건 수렴 — 항상 펼침 + 신규 실험 구성 버튼 */
               <div className="space-y-3">
-                {message.results.map((r, i) => (
-                  <SearchResult key={i} result={r} rank={i + 1} />
-                ))}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-emerald-700">최종 후보 실험</span>
+                  <button
+                    onClick={() => onCreateFromExperiment(message.results[0])}
+                    className="text-xs px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition"
+                  >
+                    이 실험 기반으로 신규 실험 구성 →
+                  </button>
+                </div>
+                <SearchResult result={message.results[0]} rank={1} />
+              </div>
+            ) : (
+              /* 다수 후보 — 토글 */
+              <div>
+                <button
+                  onClick={() => setShowResults(!showResults)}
+                  className="text-sm text-violet-600 hover:text-violet-800 font-medium mb-2 flex items-center gap-1"
+                >
+                  <svg className={`w-3.5 h-3.5 transition-transform ${showResults ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                  후보 실험 ({message.results.length}건)
+                </button>
+                {showResults && (
+                  <div className="space-y-3">
+                    {message.results.map((r, i) => (
+                      <SearchResult key={i} result={r} rank={i + 1} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

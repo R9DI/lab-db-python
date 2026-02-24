@@ -65,12 +65,12 @@ function ensureIndex() {
 }
 
 // 실험 데이터를 LLM 컨텍스트용 텍스트로 변환
-function experimentToContext(result, idx) {
+function experimentToContext(result, idx, total) {
   const exp = result.experiment;
   const proj = result.project;
   const splits = result.splits || [];
 
-  let text = `[실험 ${idx + 1}] ${exp.eval_item || "N/A"}
+  let text = `[후보 ${idx + 1}/${total}] ${exp.eval_item || "N/A"}
   - 과제: ${exp.iacpj_nm || "N/A"}
   - 모듈: ${exp.module || "N/A"}
   - Plan ID: ${exp.plan_id || "미배정"}
@@ -131,15 +131,20 @@ async function callLLM(config, systemPrompt, userMessage, conversationHistory = 
   return data.choices?.[0]?.message?.content || "응답을 생성하지 못했습니다.";
 }
 
-const SYSTEM_PROMPT = `당신은 반도체 실험 데이터베이스 검색 도우미입니다.
-사용자가 실험을 찾거나 분석을 요청하면, 제공된 실험 데이터를 기반으로 정확하고 간결하게 답변합니다.
+const SYSTEM_PROMPT = `당신은 반도체 실험 데이터베이스 탐색 도우미입니다.
+목표: 대화를 통해 후보 실험을 점차 1개로 좁혀나가는 것입니다.
 
-규칙:
-1. 제공된 실험 데이터만을 근거로 답변하세요. 데이터에 없는 내용을 추측하지 마세요.
-2. 실험 간 비교, 유사 실험 추천, 조건 분석 등을 수행할 수 있습니다.
-3. 답변은 한국어로 작성하세요.
-4. 구조화된 형태(번호, 불렛)로 요약해주세요.
-5. 사용자가 특정 실험에 대해 질문하면 해당 실험의 상세 정보를 안내하세요.`;
+응답 규칙:
+1. 현재 후보 실험들의 핵심 차이점을 구체적으로 설명하세요 (공정, 모듈, 조건, 목적 등).
+2. 범위를 좁힐 수 있는 질문을 1~2개 제시하세요.
+3. 사용자의 답변을 반영해 어떤 실험이 더 적합한지 안내하세요.
+4. 후보가 1개로 좁혀지면 해당 실험의 상세 정보를 안내하고, 이 실험을 기반으로 신규 실험을 구성할지 물어보세요.
+5. 후보가 많을 때는 가장 구분력 있는 기준(공정 조건, 모듈, 목적 등)으로 그룹핑하여 설명하세요.
+
+금지사항:
+- 데이터에 없는 내용을 추측하거나 만들어내지 마세요.
+- 영어 사용 금지 (한국어 전용).
+- 단순 목록 나열 금지 — 반드시 차이점 설명과 좁혀가는 질문을 포함하세요.`;
 
 // ─── 설정 조회 ───
 router.get("/config", (req, res) => {
@@ -215,24 +220,31 @@ function parseQuery(rawQuery) {
 
 // ─── 메인 검색 엔드포인트 ───
 router.post("/", async (req, res) => {
-  const { query, conversationHistory = [] } = req.body;
+  const { query, conversationHistory = [], candidateIds = null } = req.body;
   if (!query) return res.status(400).json({ error: "query is required" });
 
   if (!indexed) ensureIndex();
 
   const { quotedTerms, normalQuery } = parseQuery(query);
 
-  // 후속 질문 시 대화 이력의 이전 사용자 쿼리를 합쳐 검색 범위 확장
-  const prevUserQueries = conversationHistory
-    .filter((m) => m.role === "user")
-    .slice(-3)
-    .map((m) => m.content)
-    .join(" ");
-  const expandedQuery = prevUserQueries ? `${query} ${prevUserQueries}` : query;
-
-  // 따옴표 포함 시 전체 인덱스 스캔 (TF-IDF topK 제한 우회)
   let candidates;
-  if (quotedTerms.length > 0) {
+
+  if (candidateIds && candidateIds.length > 0) {
+    // 후속 대화: 이전 후보 IDs 안에서만 검색
+    const idSet = new Set(candidateIds);
+    const allResults = engine.search(query, engine.documents.length);
+    const filtered = allResults.filter((r) => idSet.has(r.document.id));
+
+    if (filtered.length > 0) {
+      candidates = filtered.slice(0, 15);
+    } else {
+      // 쿼리 매칭이 없으면 후보 전체 유지 (사용자가 방향을 바꾼 경우 대비)
+      candidates = engine.documents
+        .filter((doc) => idSet.has(doc.id))
+        .map((doc) => ({ score: 0.5, document: doc }));
+    }
+  } else if (quotedTerms.length > 0) {
+    // 따옴표 포함 시 전체 인덱스 스캔 (TF-IDF topK 제한 우회)
     const exactMatched = engine.documents.filter((doc) => {
       const rawText = engine._docToText(doc).toLowerCase();
       return quotedTerms.every((phrase) => rawText.includes(phrase.toLowerCase()));
@@ -248,20 +260,14 @@ router.post("/", async (req, res) => {
       candidates = exactMatched.slice(0, 15).map((doc) => ({ score: 1, document: doc }));
     }
   } else {
-    // 일반 TF-IDF 검색 + 확장 쿼리 병합
+    // 일반 TF-IDF 검색
     const primaryResults = engine.search(query, 15);
-    const expandedResults = prevUserQueries ? engine.search(expandedQuery, 15) : [];
-    const seenDocs = new Set(primaryResults.map((r) => r.document));
-    const merged = [
-      ...primaryResults,
-      ...expandedResults.filter((r) => !seenDocs.has(r.document)),
-    ].slice(0, 15);
     const queryTokens = engine.tokenize(query);
-    const andFiltered = merged.filter((r) => {
+    const andFiltered = primaryResults.filter((r) => {
       const docText = engine._docToText(r.document).toLowerCase();
       return queryTokens.every((t) => docText.includes(t));
     });
-    candidates = andFiltered.length > 0 ? andFiltered : merged;
+    candidates = andFiltered.length > 0 ? andFiltered : primaryResults;
   }
 
   const enriched = candidates.map((r) => {
@@ -293,11 +299,15 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const contextText = finalResults.length > 0
-      ? finalResults.map((r, i) => experimentToContext(r, i)).join("\n\n")
+    const total = finalResults.length;
+    const contextText = total > 0
+      ? finalResults.map((r, i) => experimentToContext(r, i, total)).join("\n\n")
       : "관련 실험 데이터를 찾지 못했습니다.";
 
-    const userMessage = `[검색된 실험 데이터]\n${contextText}\n\n[사용자 질문]\n${query}\n\n위 실험 데이터를 바탕으로 사용자의 질문에 답변해주세요.`;
+    const isNarrowing = candidateIds && candidateIds.length > 0;
+    const userMessage = isNarrowing
+      ? `[현재 후보 실험 목록 (${total}건)]\n${contextText}\n\n[사용자 메시지]\n${query}\n\n후보 실험들의 차이점을 분석하고, 사용자의 답변을 반영하여 어떤 실험이 더 적합한지 안내하며 후보를 좁혀주세요.`
+      : `[검색된 후보 실험 목록 (${total}건)]\n${contextText}\n\n[사용자 질문]\n${query}\n\n위 후보 실험들의 핵심 차이점을 설명하고, 범위를 좁힐 수 있는 질문을 제시해주세요.`;
 
     const llmResponse = await callLLM(config, SYSTEM_PROMPT, userMessage, conversationHistory);
 
