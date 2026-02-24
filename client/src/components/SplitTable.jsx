@@ -24,7 +24,6 @@ function SplitTable({ splits }) {
     const cols = [];
     for (let i = 1; i <= 25; i++) {
       const key = `user_def_val_${i}`;
-      ㄹ;
       cols.push({
         headerName: `${i}`,
         field: key,
