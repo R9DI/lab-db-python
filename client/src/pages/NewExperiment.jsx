@@ -338,7 +338,6 @@ function NewExperiment() {
       alert("과제명을 입력해주세요.");
       return;
     }
-
     setSaving(true);
     setSaveResult(null);
 
@@ -368,16 +367,15 @@ function NewExperiment() {
       const expRes = await axios.post("/api/experiments", { ...experiment, request_date: today });
       results.experiment = expRes.data ? "1건 저장" : "저장 실패";
 
-      // 3. 스플릿 저장 (plan_id가 없으므로 experiment id 기반으로 임시 저장)
+      // 3. 스플릿 저장
       if (
         splits.length > 0 &&
         splits.some((s) => s.oper_nm || s.work_cond_desc)
       ) {
-        // 실험 ID를 plan_id로 사용해서 split 저장 (나중에 lot 배정 시 업데이트)
-        const tempPlanId = `EXP-${expRes.data.id}`;
         await axios.patch(`/api/experiments/${expRes.data.id}/status`, {
           status: "Assign 전",
         });
+        const tempPlanId = `EXP-${expRes.data.id}`;
         const splitRes = await axios.post(
           `/api/experiments/${tempPlanId}/splits`,
           { splits },

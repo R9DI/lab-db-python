@@ -168,7 +168,11 @@ function TableSearch({ data, fields, onFilter }) {
     const val = e.target.value;
     setQuery(val);
     onFilter(val);
-    if (!val.trim()) { setSuggestions([]); setOpen(false); return; }
+    if (!val.trim()) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
     const seen = new Set();
     for (const row of data) {
       for (const field of fields) {
@@ -188,7 +192,12 @@ function TableSearch({ data, fields, onFilter }) {
     setOpen(false);
   };
 
-  const clear = () => { setQuery(""); onFilter(""); setSuggestions([]); setOpen(false); };
+  const clear = () => {
+    setQuery("");
+    onFilter("");
+    setSuggestions([]);
+    setOpen(false);
+  };
 
   return (
     <div ref={wrapRef} className="relative">
@@ -203,7 +212,12 @@ function TableSearch({ data, fields, onFilter }) {
           className="px-3 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-400 outline-none w-48"
         />
         {query && (
-          <button onClick={clear} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+          <button
+            onClick={clear}
+            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+          >
+            ×
+          </button>
         )}
       </div>
       {open && suggestions.length > 0 && (
@@ -324,7 +338,7 @@ function LotAssign() {
     [assignModal, fetchExperiments],
   );
 
-// Split Table 모달 열기 (source: 'pending' | 'active')
+  // Split Table 모달 열기 (source: 'pending' | 'active')
   const openSplitModal = useCallback(async (data, source = "pending") => {
     try {
       const res = await axios.get(`/api/experiments/${data.id}`);
@@ -777,8 +791,22 @@ function LotAssign() {
     return {};
   }, []);
 
-  const pendingFields = useMemo(() => ["eval_item", "iacpj_nm", "eval_category", "eval_process", "module", "lot_code", "requester"], []);
-  const activeFields = useMemo(() => ["eval_item", "iacpj_nm", "plan_id", "fab_status", "status"], []);
+  const pendingFields = useMemo(
+    () => [
+      "eval_item",
+      "iacpj_nm",
+      "eval_category",
+      "eval_process",
+      "module",
+      "lot_code",
+      "requester",
+    ],
+    [],
+  );
+  const activeFields = useMemo(
+    () => ["eval_item", "iacpj_nm", "plan_id", "fab_status", "status"],
+    [],
+  );
 
   if (loading) {
     return (
@@ -875,7 +903,7 @@ function LotAssign() {
         <Modal
           title={`📋 Split Table — ${splitModal.evalItem} (${splitModal.planId})`}
           onClose={() => setSplitModal(null)}
-          >
+        >
           {splitModal.splits.length > 0 ? (
             <SplitTable splits={splitModal.splits} maxHeight={640} />
           ) : (
@@ -898,7 +926,9 @@ function LotAssign() {
           />
           {summaryModal.experiment.summary_text && (
             <div className="mt-6 border-t border-gray-200 pt-5">
-              <h4 className="text-sm font-bold text-emerald-700 mb-2">📝 Summary</h4>
+              <h4 className="text-sm font-bold text-emerald-700 mb-2">
+                📝 Summary
+              </h4>
               <p className="text-sm text-gray-700 whitespace-pre-wrap bg-emerald-50 rounded-lg px-4 py-3 border border-emerald-100">
                 {summaryModal.experiment.summary_text}
               </p>
@@ -930,7 +960,9 @@ function LotAssign() {
             )}
             {detailModal.splits.length === 0 && (
               <div>
-                <h4 className="text-sm font-bold text-gray-700 mb-2">Split Table</h4>
+                <h4 className="text-sm font-bold text-gray-700 mb-2">
+                  Split Table
+                </h4>
                 <p className="text-gray-400 text-sm text-center py-4">
                   등록된 Split 데이터가 없습니다.
                 </p>
