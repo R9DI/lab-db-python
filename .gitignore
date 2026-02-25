@@ -15,3 +15,10 @@ coverage/
 *.db-wal
 *.db-shm
 *.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+uploads/
+server_py/llm-config.json

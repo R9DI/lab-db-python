@@ -3,18 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "server": "nodemon server/index.js",
-    "client": "cd client && npm run dev"
+    "dev": "concurrently \"pnpm run server\" \"pnpm run client\"",
+    "server": "uvicorn server_py.main:app --port 3001 --reload",
+    "client": "cd client && pnpm run dev"
   },
   "dependencies": {
-    "concurrently": "^9.0.0",
-    "cors": "^2.8.5",
-    "csv-parser": "^3.2.0",
-    "express": "^4.21.0",
-    "multer": "^2.0.2"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.11"
+    "concurrently": "^9.0.0"
   }
 }
