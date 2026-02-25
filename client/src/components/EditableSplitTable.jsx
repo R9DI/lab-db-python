@@ -48,6 +48,33 @@ const getSplitColor = (val, isEvenGroup) => {
   return family[val?.toLowerCase()] || DEFAULT_SPLIT;
 };
 
+function UnderConstructionModal({ title, onClose, large }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div
+        className={`bg-white rounded-2xl shadow-2xl flex flex-col ${
+          large ? "w-[860px] h-[600px]" : "w-[480px] h-[320px]"
+        }`}
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <span className="font-semibold text-gray-800 text-sm">{title}</span>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400">
+          <span className="text-5xl">🚧</span>
+          <span className="text-lg font-semibold tracking-wide">공사중</span>
+          <span className="text-xs">준비 중인 기능입니다</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EditableSplitTable({ splits, planId, experimentId, onSaved }) {
   const [rows, setRows] = useState(() =>
     [...splits].sort((a, b) => {
@@ -62,6 +89,8 @@ function EditableSplitTable({ splits, planId, experimentId, onSaved }) {
   const [saved, setSaved] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [finalized, setFinalized] = useState(false);
+  const [showEpsModal, setShowEpsModal] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
   const gridRef = useRef(null);
 
   const handleDeleteRow = useCallback((rowIndex) => {
@@ -206,14 +235,41 @@ function EditableSplitTable({ splits, planId, experimentId, onSaved }) {
 
   return (
     <div>
+      {showEpsModal && (
+        <UnderConstructionModal
+          title="EPS 발행"
+          large
+          onClose={() => setShowEpsModal(false)}
+        />
+      )}
+      {showCompareModal && (
+        <UnderConstructionModal
+          title="EPS/BASE 비교"
+          onClose={() => setShowCompareModal(false)}
+        />
+      )}
       <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={handleAddRow}
-          className="text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition"
-        >
-          + 행 추가
-        </button>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleAddRow}
+            className="text-xs px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg transition"
+          >
+            + 행 추가
+          </button>
+          <button
+            onClick={() => setShowEpsModal(true)}
+            className="text-xs px-2.5 py-1 bg-violet-50 hover:bg-violet-100 text-violet-600 rounded-lg transition font-medium"
+          >
+            EPS 발행
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCompareModal(true)}
+            className="text-xs px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-600 rounded-lg transition font-medium"
+          >
+            EPS/BASE 비교
+          </button>
           <button
             onClick={handleSave}
             disabled={saving || !dirty}
