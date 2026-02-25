@@ -46,7 +46,7 @@ def _sql_insert(table, cols, ignore=False):
     ph = ", ".join(f":{c}" for c in cols)
     return f"INSERT{ig} INTO {table} ({cn}) VALUES ({ph})"
 
-@router.post("/")
+@router.post("")
 async def upload_csv(
     file: UploadFile = File(...),
     type: str = Form("all"),
