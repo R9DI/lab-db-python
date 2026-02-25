@@ -55,7 +55,18 @@ async def upload_csv(
     if not file:
         raise HTTPException(400, "No file uploaded")
     content = await file.read()
-    text = content.decode("utf-8-sig")
+
+    # 인코딩 자동 감지 (UTF-8 → EUC-KR → CP949)
+    text = None
+    for encoding in ("utf-8-sig", "utf-8", "euc-kr", "cp949"):
+        try:
+            text = content.decode(encoding)
+            break
+        except (UnicodeDecodeError, ValueError):
+            continue
+    if text is None:
+        raise HTTPException(400, "파일 인코딩을 인식할 수 없습니다. UTF-8로 저장 후 다시 시도해주세요.")
+
     reader = csv.DictReader(io.StringIO(text))
     results = [{k.lower().strip(): v for k, v in row.items()} for row in reader]
 
