@@ -5,11 +5,15 @@ import { AllCommunityModule, ModuleRegistry } from "ag-grid-community";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const SPLIT_COLORS = {
-  base: { row: "#EFF6FF", cell: "#DBEAFE", text: "#1E40AF" },
-  s1: { row: "#FFFBEB", cell: "#FEF3C7", text: "#92400E" },
-  s2: { row: "#F0FDF4", cell: "#D1FAE5", text: "#065F46" },
-  s3: { row: "#F5F3FF", cell: "#EDE9FE", text: "#5B21B6" },
-  s4: { row: "#FFF1F2", cell: "#FFE4E6", text: "#9F1239" },
+  base: { row: "#EFF6FF", cell: "#BFDBFE", text: "#1E40AF" },  // 파랑 — 최고 채도
+  s1:   { row: "#EEF2FF", cell: "#C7D2FE", text: "#3730A3" },  // 인디고
+  s2:   { row: "#F5F3FF", cell: "#DDD6FE", text: "#5B21B6" },  // 바이올렛
+  s3:   { row: "#FFF1F2", cell: "#FFE4E6", text: "#9F1239" },  // 로즈
+  s4:   { row: "#FFFBEB", cell: "#FDE68A", text: "#92400E" },  // 앰버
+  s5:   { row: "#F0FDF4", cell: "#BBF7D0", text: "#14532D" },  // 그린
+  s6:   { row: "#F0F9FF", cell: "#BAE6FD", text: "#0369A1" },  // 스카이
+  s7:   { row: "#F8FAFC", cell: "#CBD5E1", text: "#334155" },  // 슬레이트 — 저채도
+  s8:   { row: "#F9FAFB", cell: "#E5E7EB", text: "#374151" },  // 회색 — 최저 채도
 };
 const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
 
@@ -46,7 +50,7 @@ function SplitTable({ splits, maxHeight = 400 }) {
     () => [
       {
         headerName: "SNO",
-        field: "#",
+        field: "sno",
         width: 60,
         cellStyle: { textAlign: "center" },
       },

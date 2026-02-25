@@ -6,15 +6,30 @@ import axios from "axios";
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 const SPLIT_COLORS = {
-  base: { cell: "#DBEAFE", text: "#1E40AF" },
-  s1:   { cell: "#FEF3C7", text: "#92400E" },
-  s2:   { cell: "#D1FAE5", text: "#065F46" },
-  s3:   { cell: "#EDE9FE", text: "#5B21B6" },
-  s4:   { cell: "#FFE4E6", text: "#9F1239" },
+  base: { row: "#EFF6FF", cell: "#BFDBFE", text: "#1E40AF" },  // 파랑 — 최고 채도
+  s1:   { row: "#EEF2FF", cell: "#C7D2FE", text: "#3730A3" },  // 인디고
+  s2:   { row: "#F5F3FF", cell: "#DDD6FE", text: "#5B21B6" },  // 바이올렛
+  s3:   { row: "#FFF1F2", cell: "#FFE4E6", text: "#9F1239" },  // 로즈
+  s4:   { row: "#FFFBEB", cell: "#FDE68A", text: "#92400E" },  // 앰버
+  s5:   { row: "#F0FDF4", cell: "#BBF7D0", text: "#14532D" },  // 그린
+  s6:   { row: "#F0F9FF", cell: "#BAE6FD", text: "#0369A1" },  // 스카이
+  s7:   { row: "#F8FAFC", cell: "#CBD5E1", text: "#334155" },  // 슬레이트 — 저채도
+  s8:   { row: "#F9FAFB", cell: "#E5E7EB", text: "#374151" },  // 회색 — 최저 채도
 };
+const DEFAULT_SPLIT = { row: "#F9FAFB", cell: "#F3F4F6", text: "#374151" };
+
+const getSplitColor = (val) =>
+  SPLIT_COLORS[val?.toLowerCase()] || DEFAULT_SPLIT;
 
 function EditableSplitTable({ splits, planId, experimentId, onSaved }) {
-  const [rows, setRows] = useState(() => splits.map(s => ({ ...s })));
+  const [rows, setRows] = useState(() =>
+    [...splits].sort((a, b) => {
+      if (a.sno == null && b.sno == null) return 0;
+      if (a.sno == null) return 1;
+      if (b.sno == null) return -1;
+      return a.sno - b.sno;
+    })
+  );
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -98,6 +113,16 @@ function EditableSplitTable({ splits, planId, experimentId, onSaved }) {
     setRows(updated);
     setDirty(true);
     setSaved(false);
+  }, []);
+
+  const getRowStyle = useCallback((params) => {
+    const prev = params.api.getDisplayedRowAtIndex(params.rowIndex - 1);
+    const borderTop =
+      prev && prev.data.oper_id !== params.data.oper_id
+        ? "2px solid #64748B"
+        : undefined;
+    const c = getSplitColor(params.data.eps_lot_gbn_cd);
+    return { backgroundColor: c.row, borderTop };
   }, []);
 
   const handleAddRow = () => {
@@ -196,6 +221,7 @@ function EditableSplitTable({ splits, planId, experimentId, onSaved }) {
           rowData={rows}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
+          getRowStyle={getRowStyle}
           headerHeight={36}
           rowHeight={36}
           domLayout={rows.length <= 9 ? "autoHeight" : undefined}
