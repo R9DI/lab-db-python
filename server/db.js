@@ -116,7 +116,9 @@ function initDB() {
   // 마이그레이션: summary_text 컬럼
   try {
     db.exec("ALTER TABLE experiments ADD COLUMN summary_text TEXT");
-  } catch (_) { /* 이미 존재하면 무시 */ }
+  } catch (_) {
+    /* 이미 존재하면 무시 */
+  }
 }
 
 /**
