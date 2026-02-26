@@ -1,0 +1,15 @@
+[project]
+name = "lab-db"
+version = "1.0.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "python-multipart>=0.0.6",
+    "aiofiles>=23.0.0",
+    "httpx>=0.26.0",
+]
+
+[tool.uv]
+# 사내 PyPI 미러 주소로 변경하세요
+index-url = "https://내부레포주소/simple/"
