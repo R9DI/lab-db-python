@@ -22,3 +22,7 @@ __pycache__/
 *.pyo
 uploads/
 server_py/llm-config.json
+
+# 로컬 전용 (git 미추적)
+queries/
+local/
